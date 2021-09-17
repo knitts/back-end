@@ -49,7 +49,7 @@ describe('League', async()=>{
 });
 
 describe('Knitts-League', async()=>{
-    var knits;
+    var knitts;
     var accounts;
     var league;
     before(async function(){
@@ -61,9 +61,33 @@ describe('Knitts-League', async()=>{
         await knitts.addModerator.call({from: accounts[1], value:web3.utils.toWei('1', 'ether')});
         await knitts.createLeague.sendTransaction(web3.utils.toWei('0.1', 'ether'), 3, 1000, {from:accounts[1]});
         var leagueAddress = await knitts.createLeague.call(web3.utils.toWei('0.1', 'ether'), 3, 1000, {from:accounts[1]});
-        console.log('league address: ', leagueAddress[0]);
         league = await League.at(leagueAddress[0]);
         var league_details = await league.getDetails.call();
         assert(league_details[0] == accounts[1], "moderator address is different");
     });
+    it('should allow participants to enter', async()=>{
+        await league.submitIdea.sendTransaction("OM", {from: accounts[2], value: web3.utils.toWei('0.1', 'ether')});
+        var numParticipants = await league.submitIdea.call("OM", {from: accounts[2], value: web3.utils.toWei('0.1', 'ether')});
+        assert(numParticipants > 0, 'participants not updated properly');
+    });
+    // it('shouldn\'t allow more than 3 participants to enter', async()=>{
+    //     var err = true;
+    //     try{
+    //         await league.submitIdea.sendTransaction("OM", {from: accounts[3], value: web3.utils.toWei('0.1', 'ether')});
+    //         await league.submitIdea.sendTransaction("OM", {from: accounts[4], value: web3.utils.toWei('0.1', 'ether')});
+    //         await league.submitIdea.sendTransaction("OM", {from: accounts[4], value: web3.utils.toWei('0.1', 'ether')});
+    //         var numParticipants = await league.submitIdea.call("OM", {from: accounts[6], value: web3.utils.toWei('0.1', 'ether')});
+    //         console.log('numParticipants: ', numParticipants);
+
+    //         err = false;
+    //     }catch(e){
+    //         console.log('error:', e);
+    //         err=true;
+    //     }
+    //     assert(err, "it shouldn't allow more than 3 participants");
+        
+
+    //     var numParticipants = await league.submitIdea.call("OM", {from: accounts[2], value: web3.utils.toWei('0.1', 'ether')});
+    //     console.log(numParticipants > 0, 'participants not updated properly');
+    // });
 });
