@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8;
+pragma solidity >=0.8.0;
 
 contract Knitts{
     //organization address here
-    address organization = 0x604BCD042D2d5B355ecE14B6aC3224d23F29a51c;
+    address organization = 0x79e6234Ff4E7DB556F916FeBcE9e52a68D0B8879;
     address[] moderators;
     mapping(address => uint) deposits;
     address[] Leagues;
@@ -19,17 +19,24 @@ contract Knitts{
     }
 
     function createLeague(uint _entryFee, uint _numPlayers, uint _duration) public returns(address[] memory){
-        require(_entryFee * _numPlayers <= _numPlayers, "Insufficient deposit");
+        require(_entryFee * _numPlayers <= deposits[msg.sender], "Insufficient deposit");
         League newLeague = new League(msg.sender, _entryFee, _numPlayers, _duration);
         Leagues.push(address(newLeague));
         return Leagues;
     }
 
+    function getBalance(address _moderator) public view returns (uint){
+        return deposits[_moderator];
+    }
+
+    function getDetails() public view returns (address [] memory, address [] memory){
+        return (moderators, Leagues);
+    }
     
 }
 
 contract League{
-    address organization = 0x604BCD042D2d5B355ecE14B6aC3224d23F29a51c;
+    address organization = 0x79e6234Ff4E7DB556F916FeBcE9e52a68D0B8879;
     uint entryFee;
     uint maxParticipants;
     uint numProjects;
@@ -46,7 +53,7 @@ contract League{
         mapping(address => uint)investments;
     }
 
-    project [] projects;
+    mapping(uint => project) projects;
 
     constructor(address _moderator, uint _entryFee, uint _maxParticipants, uint _duration){
         entryFee = _entryFee;
@@ -59,7 +66,8 @@ contract League{
         distributed=false;
     }
 
-    function submitIdea(string memory description) public returns(uint){
+    function submitIdea(string memory description) public payable returns(uint){
+        require(msg.value >= entryFee, "Insufficient entry fee");
         require(numProjects < maxParticipants, "Maximum limit reached");
         project storage p = projects[numProjects++];
         p.owner = msg.sender;
@@ -93,5 +101,16 @@ contract League{
     function distribute() public{
         require(msg.sender == organization, "only organization can distribute prizes");
         //write the quadratic function
+    }
+
+    function getDetails() public view returns(
+        address,//moderator
+        uint,//entry fee
+        uint,//maxParticipants
+        bool, //started
+        bool, //ended
+        bool //distributed
+    ){
+        return (moderator, entryFee, maxParticipants, started, ended, distributed);
     }
 }
