@@ -40,7 +40,7 @@ describe('League', async()=>{
         ;
     });
     it('should allow participants to join the league', async()=>{
-        var description = "OM";
+        description = [web3.utils.hexToBytes('0x'+Buffer.from('OM', 'utf8').toString('hex')), web3.utils.hexToBytes('0x'+Buffer.from('NAMO', 'utf8').toString('hex')), web3.utils.hexToBytes('0x'+Buffer.from('NARAYANA', 'utf8').toString('hex'))];
         await league.submitIdea.sendTransaction(description, {from:accounts[1], value: web3.utils.toWei('1', 'ether')});
         var projectId = await league.submitIdea.call(description, {from: accounts[1], value: web3.utils.toWei('1', 'ether')});
         // console.log(projectId);
@@ -66,8 +66,9 @@ describe('Knitts-League', async()=>{
         assert(league_details[0] == accounts[1], "moderator address is different");
     });
     it('should allow participants to enter', async()=>{
-        await league.submitIdea.sendTransaction("OM", {from: accounts[2], value: web3.utils.toWei('0.1', 'ether')});
-        var numParticipants = await league.submitIdea.call("OM", {from: accounts[2], value: web3.utils.toWei('0.1', 'ether')});
+        description = [web3.utils.hexToBytes('0x'+Buffer.from('OM', 'utf8').toString('hex')), web3.utils.hexToBytes('0x'+Buffer.from('NAMO', 'utf8').toString('hex')), web3.utils.hexToBytes('0x'+Buffer.from('NARAYANA', 'utf8').toString('hex'))];
+        await league.submitIdea.sendTransaction(description, {from: accounts[2], value: web3.utils.toWei('0.1', 'ether')});
+        var numParticipants = await league.submitIdea.call(description, {from: accounts[2], value: web3.utils.toWei('0.1', 'ether')});
         assert(numParticipants > 0, 'participants not updated properly');
     });
     // it('shouldn\'t allow more than 3 participants to enter', async()=>{

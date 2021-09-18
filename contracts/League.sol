@@ -7,6 +7,7 @@ contract Knitts{
     address[] moderators;
     mapping(address => uint) deposits;
     address[] Leagues;
+    uint maxDescLength = 1000;
     function addModerator() public payable{
         require(msg.value > 0, "You should deposit some amount");
         moderators.push(msg.sender);
@@ -49,7 +50,7 @@ contract League{
     uint [] points;
     struct project{
         address owner;
-        string description;
+        bytes[] description;
         mapping(address => uint)investments;
     }
 
@@ -66,7 +67,7 @@ contract League{
         distributed=false;
     }
 
-    function submitIdea(string memory description) public payable returns(uint){
+    function submitIdea(bytes[] memory description) public payable returns(uint){
         require(msg.value >= entryFee, "Insufficient entry fee");
         require(numProjects < maxParticipants, "Maximum limit reached");
         project storage p = projects[numProjects++];
@@ -112,5 +113,12 @@ contract League{
         bool //distributed
     ){
         return (moderator, entryFee, maxParticipants, started, ended, distributed);
+    }
+
+    function submissionDetails(uint projectId) public view returns(
+        address, // project owner
+        bytes[] memory // description
+    )  {
+        return (projects[projectId].owner, projects[projectId].description);
     }
 }
