@@ -50,7 +50,7 @@ contract League{
     uint [] points;
     struct project{
         address owner;
-        bytes[] description;
+        bytes[20][] description;
         mapping(address => uint)investments;
     }
 
@@ -67,7 +67,7 @@ contract League{
         distributed=false;
     }
 
-    function submitIdea(bytes[] memory description) public payable returns(uint){
+    function submitIdea(bytes[20][] memory description) public payable returns(uint){
         require(msg.value >= entryFee, "Insufficient entry fee");
         require(numProjects < maxParticipants, "Maximum limit reached");
         project storage p = projects[numProjects++];
@@ -117,7 +117,7 @@ contract League{
 
     function submissionDetails(uint projectId) public view returns(
         address, // project owner
-        bytes[] memory // description
+        bytes[20][] memory // description
     )  {
         return (projects[projectId].owner, projects[projectId].description);
     }
