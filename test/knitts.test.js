@@ -109,11 +109,13 @@ describe('Knitts-League', async()=>{
     var moderator;
     var randomAccount;
     var participants;
+    var investors;
     before(async function(){
         accounts = await web3.eth.getAccounts();
         organization = moderator = accounts[0];
         randomAccount = accounts[8];
         participants = [accounts[1], accounts[2]];
+        investors = [accounts[3], accounts[4], accounts[5]];
         knitts = await Knitts.new(moderator, web3.utils.toWei('0.1', 'ether'), 3, 1000, {from:moderator});
         sentence = ["OM", "NAMO", "NARAYANA"];
         description = convert2Bytes(sentence, 20);
@@ -129,11 +131,29 @@ describe('Knitts-League', async()=>{
     });
     it('should allow participants to enter', async()=>{
         await league.submitIdea.sendTransaction(description, {from: participants[0], value: web3.utils.toWei('0.1', 'ether')});
+        await league.submitIdea.sendTransaction(description, {from: participants[1], value: web3.utils.toWei('0.1', 'ether')});
         var numParticipants = await league.submitIdea.call(description, {from: participants[0], value: web3.utils.toWei('0.1', 'ether')});
         assert(numParticipants > 0, 'participants not updated properly');
+        console.log('# of participants:', numParticipants);
     });
+
+    it('allows investor to invest', async()=>{
+        await league.invest.sendTransaction(0, {from:investors[0], value: web3.utils.toWei('1', 'ether')});
+        await league.invest.sendTransaction(1, {from:investors[1], value: web3.utils.toWei('2', 'ether')});
+        await league.invest.sendTransaction(0, {from: investors[2], value:web3.utils.toWei('1', 'ether')});
+    });
+
     it('should return the points', async()=>{
-        await league.submitIdea.sendTransaction(description, {from: organization, value: web3.utils.toWei('0.1', 'ether')});
-        points = await league.endLeague.sendTransaction({from: organization})
+        await league.submitIdea.sendTransaction(description, {from: participants[1], value: web3.utils.toWei('0.1', 'ether')});
+        points = await league.endLeague.sendTransaction({from: organization});
+        points = await league.endLeague.call({from: organization});
+        console.log('points:', points);
     });
 });
+
+
+/*
+rough pad:
+words: [ 36392601, 11462121, 1294, <1 empty item> ] with sqrt function
+words: [ 0, 36037632, 66860250, 17393732, 443734, <1 empty item> ] without sqrt function
+*/

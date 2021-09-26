@@ -92,7 +92,7 @@ contract League{
             projects[projectId].investors.push(msg.sender);
         }
 
-        projects[projectId].investments[msg.sender] += msg.value;
+        projects[projectId].investments[msg.sender] += msg.value/1e12;
         
     }
 
@@ -109,6 +109,8 @@ contract League{
 
     function getPoints() private returns(uint[] memory){
         require(ended = true, "the game has not ended");
+        uint [] memory empty_points;
+        points = empty_points;
         // require(msg.sender == organization, "only organization get the points");
         // write quadratic funding code here
         for(uint i=0; i < numProjects; i++){
@@ -123,7 +125,7 @@ contract League{
         return points;
     }
 
-    function distribute() public{
+    function distribute() public view{
         require(msg.sender == organization, "only organization can distribute prizes");
         //write the quadratic function
     }
