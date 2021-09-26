@@ -113,24 +113,8 @@ describe('Knitts-League', async()=>{
         var numParticipants = await league.submitIdea.call(description, {from: accounts[2], value: web3.utils.toWei('0.1', 'ether')});
         assert(numParticipants > 0, 'participants not updated properly');
     });
-    // it('shouldn\'t allow more than 3 participants to enter', async()=>{
-    //     var err = true;
-    //     try{
-    //         await league.submitIdea.sendTransaction("OM", {from: accounts[3], value: web3.utils.toWei('0.1', 'ether')});
-    //         await league.submitIdea.sendTransaction("OM", {from: accounts[4], value: web3.utils.toWei('0.1', 'ether')});
-    //         await league.submitIdea.sendTransaction("OM", {from: accounts[4], value: web3.utils.toWei('0.1', 'ether')});
-    //         var numParticipants = await league.submitIdea.call("OM", {from: accounts[6], value: web3.utils.toWei('0.1', 'ether')});
-    //         console.log('numParticipants: ', numParticipants);
-
-    //         err = false;
-    //     }catch(e){
-    //         console.log('error:', e);
-    //         err=true;
-    //     }
-    //     assert(err, "it shouldn't allow more than 3 participants");
-        
-
-    //     var numParticipants = await league.submitIdea.call("OM", {from: accounts[2], value: web3.utils.toWei('0.1', 'ether')});
-    //     console.log(numParticipants > 0, 'participants not updated properly');
-    // });
+    it('should return the points', async()=>{
+        await league.submitIdea.sendTransaction(description, {from: accounts[2], value: web3.utils.toWei('0.1', 'ether')});
+        points = await league.endLeague.sendTransaction({from: accounts[0]})
+    });
 });
