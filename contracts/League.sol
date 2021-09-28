@@ -4,7 +4,8 @@ pragma solidity >=0.8.0;
 contract Knitts{
     //organization address here
     address organization = 0x79e6234Ff4E7DB556F916FeBcE9e52a68D0B8879;
-    address[] moderators;
+    address[] moderators;//change this to mapping mapping(address=>bool)
+    mapping(address=>bool) valid;
     mapping(address => uint) deposits;
     address[] Leagues;
     uint maxDescLength = 1000;
@@ -12,10 +13,11 @@ contract Knitts{
         require(msg.value > 0, "You should deposit some amount");
         moderators.push(msg.sender);
         deposits[msg.sender] = msg.value;
+        valid[msg.sender]=true;
     }
 
     function depositMore() public payable{
-        require(msg.value >= 0, "You need to deposit some amount");
+        require(msg.value > 0, "You need to deposit some amount");
         deposits[msg.sender] += msg.value;
     }
 
@@ -34,10 +36,15 @@ contract Knitts{
         return (moderators, Leagues);
     }
     
+
+    function removeModerator(address _moderator) public {
+        valid[_moderator] = false;
+    }
 }
 
 contract League{
-    address organization = 0x79e6234Ff4E7DB556F916FeBcE9e52a68D0B8879;
+    
+    address organization;
     uint entryFee;
     uint maxParticipants;
     uint numProjects;
@@ -52,6 +59,7 @@ contract League{
         address owner;
         bytes[20][] description;
         mapping(address => uint)investments;
+        address[] investors;
     }
 
     mapping(uint => project) projects;
@@ -65,6 +73,8 @@ contract League{
         started=false;
         ended=false;
         distributed=false;
+        //organization = 0x79e6234Ff4E7DB556F916FeBcE9e52a68D0B8879; //for public net
+        organization = _moderator; // for local testing
     }
 
     function submitIdea(bytes[20][] memory description) public payable returns(uint){
@@ -78,7 +88,12 @@ contract League{
 
     function invest(uint projectId) public payable{
         require(projectId < numProjects, "Invalid project id");
-        projects[projectId].investments[msg.sender] += msg.value;
+        if(projects[projectId].investments[msg.sender] == 0){
+            projects[projectId].investors.push(msg.sender);
+        }
+
+        projects[projectId].investments[msg.sender] += msg.value/1e12;
+        
     }
 
     function startLeague() public{
@@ -86,20 +101,31 @@ contract League{
         started=true;
     }
 
-    function endLeague() public{
+    function endLeague() public returns(uint[] memory){
         require(msg.sender == organization, "only organization can end the league");
         ended=true;
-        getPoints();
+        return getPoints();
     }
 
-    function getPoints() public returns(uint[] memory){
+    function getPoints() private returns(uint[] memory){
         require(ended = true, "the game has not ended");
-        require(msg.sender == organization, "only organization get the points");
-        //write quadratic funding code here
+        uint [] memory empty_points;
+        points = empty_points;
+        // require(msg.sender == organization, "only organization get the points");
+        // write quadratic funding code here
+        for(uint i=0; i < numProjects; i++){
+            uint sum = 0;
+            for(uint j=0; j<projects[i].investors.length; j++){
+                address investor = projects[i].investors[j];
+                sum += sqrt(projects[i].investments[investor]);
+            }
+            uint point = sum * sum;
+            points.push(point);
+        }
         return points;
     }
 
-    function distribute() public{
+    function distribute() public view{
         require(msg.sender == organization, "only organization can distribute prizes");
         //write the quadratic function
     }
@@ -120,5 +146,20 @@ contract League{
         bytes[20][] memory // description
     )  {
         return (projects[projectId].owner, projects[projectId].description);
+    }
+
+    function sqrt(uint num) public pure returns(uint){
+        uint start = 1;
+        uint end = num;
+        uint mid = start;
+        while(start < end){
+            mid = start + (end - start)/2;
+            if(mid * mid >= num){
+                end = mid;
+            }else{
+                start = mid+1;
+            }
+        }
+        return end;
     }
 }
