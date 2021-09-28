@@ -105,7 +105,8 @@ contract League{
     function endLeague() public returns(uint[] memory){
         require(msg.sender == organization, "only organization can end the league");
         ended=true;
-        return getPoints();
+        getPoints();
+        return points;
     }
 
     function getPoints() private returns(uint[] memory){

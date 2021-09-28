@@ -149,6 +149,39 @@ describe('Knitts-League', async()=>{
         points = await league.endLeague.call({from: organization});
         console.log('points:', points);
     });
+
+    it('should distribute the amount', async()=>{
+        var init_balance = [
+                        await web3.eth.getBalance(accounts[0]),
+                        await web3.eth.getBalance(accounts[1]),
+                        await web3.eth.getBalance(accounts[2]),
+                        await web3.eth.getBalance(accounts[3]),
+                        await web3.eth.getBalance(accounts[4]),
+                        await web3.eth.getBalance(accounts[5]),
+                        await web3.eth.getBalance(accounts[6]),
+                        await web3.eth.getBalance(accounts[7]),
+                        await web3.eth.getBalance(accounts[8]),
+                        await web3.eth.getBalance(accounts[9]), 
+                        ];
+        await league.distribute.sendTransaction({from: organization});
+
+        var final_balance = [
+            await web3.eth.getBalance(accounts[0]),
+            await web3.eth.getBalance(accounts[1]),
+            await web3.eth.getBalance(accounts[2]),
+            await web3.eth.getBalance(accounts[3]),
+            await web3.eth.getBalance(accounts[4]),
+            await web3.eth.getBalance(accounts[5]),
+            await web3.eth.getBalance(accounts[6]),
+            await web3.eth.getBalance(accounts[7]),
+            await web3.eth.getBalance(accounts[8]),
+            await web3.eth.getBalance(accounts[9]), 
+            ];
+
+        console.log('init balance: ', init_balance);
+        console.log('final balance: ', final_balance);
+    })
+
 });
 
 
