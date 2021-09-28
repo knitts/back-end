@@ -60,6 +60,7 @@ contract League{
         bytes[20][] description;
         mapping(address => uint)investments;
         address[] investors;
+        uint total_fund;
     }
 
     mapping(uint => project) projects;
@@ -91,7 +92,7 @@ contract League{
         if(projects[projectId].investments[msg.sender] == 0){
             projects[projectId].investors.push(msg.sender);
         }
-
+        projects[projectId].total_fund += msg.value/1e12;
         projects[projectId].investments[msg.sender] += msg.value/1e12;
         
     }
@@ -125,9 +126,26 @@ contract League{
         return points;
     }
 
-    function distribute() public view{
+    function distribute() public {
         require(msg.sender == organization, "only organization can distribute prizes");
-        //write the quadratic function
+        uint total_balance = address(this).balance;
+        uint total_points=0;
+        for(uint i=0; i<numProjects; i++){
+            total_points += points[i];
+        }
+        for(uint i=0; i<numProjects; i++){
+            project storage p  =  projects[i];
+            
+            payable(p.owner).transfer( (3*points[i]*total_balance)/(10*total_points) );
+
+            for(uint j=0; j<p.investors.length; j++){
+                address investor = p.investors[j];
+                payable(investor).transfer( (6 * points[i] * total_balance * p.investments[investor]) / (10 * total_points * p.total_fund) );
+            }
+        }
+
+        payable(moderator).transfer(address(this).balance);
+
     }
 
     function getDetails() public view returns(
