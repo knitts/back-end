@@ -116,7 +116,7 @@ describe('Knitts-League', async()=>{
         randomAccount = accounts[8];
         participants = [accounts[1], accounts[2]];
         investors = [accounts[3], accounts[4], accounts[5]];
-        knitts = await Knitts.new(moderator, web3.utils.toWei('0.1', 'ether'), 3, 1000, {from:moderator});
+        knitts = await Knitts.new({from:organization});
         sentence = ["OM", "NAMO", "NARAYANA"];
         description = convert2Bytes(sentence, 20);
     });
