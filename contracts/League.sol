@@ -8,7 +8,11 @@ contract Knitts{
     mapping(address=>bool) valid;
     mapping(address => uint) deposits;
     address[] Leagues;
+  	address[] Users;
     uint maxDescLength = 1000;
+  	mapping(address => address) idToUser; 
+  	mapping(address => bool) userExists;
+  	
     function addModerator() public payable{
         require(msg.value > 0, "You should deposit some amount");
         moderators.push(msg.sender);
@@ -23,7 +27,7 @@ contract Knitts{
 
     function createLeague(uint _entryFee, uint _numPlayers, uint _duration) public returns(address[] memory){
         require(_entryFee * _numPlayers <= deposits[msg.sender], "Insufficient deposit");
-        League newLeague = new League(msg.sender, _entryFee, _numPlayers, _duration);
+        League newLeague = new League(msg.sender, _entryFee, _numPlayers, _duration, address(this));
         Leagues.push(address(newLeague));
         return Leagues;
     }
@@ -40,6 +44,16 @@ contract Knitts{
     function removeModerator(address _moderator) public {
         valid[_moderator] = false;
     }
+  
+  	function register(string memory _name) public returns (address) {
+    	User newUser = new User(msg.sender, _name);
+      return address(newUser);
+    }
+  
+  	function getUserContractAddress(address _id) public view returns(address) {
+        require(userExists[_id] == true,"The user should exist");
+        return idToUser[_id];
+    }
 }
 
 contract League{
@@ -54,7 +68,10 @@ contract League{
     bool started;
     bool ended;
     bool distributed;
+  	uint total_points=0;
     uint [] points;
+    address knittsAddress;
+
     struct project{
         address owner;
         bytes[20][] description;
@@ -62,10 +79,10 @@ contract League{
         address[] investors;
         uint total_fund;
     }
-
+		
     mapping(uint => project) projects;
 
-    constructor(address _moderator, uint _entryFee, uint _maxParticipants, uint _duration){
+    constructor(address _moderator, uint _entryFee, uint _maxParticipants, uint _duration, address _knittsAddress){
         entryFee = _entryFee;
         maxParticipants = _maxParticipants;
         moderator = _moderator;
@@ -76,6 +93,7 @@ contract League{
         distributed=false;
         //organization = 0x79e6234Ff4E7DB556F916FeBcE9e52a68D0B8879; //for public net
         organization = _moderator; // for local testing
+        knittsAddress = _knittsAddress;
     }
 
     function submitIdea(bytes[20][] memory description) public payable returns(uint){
@@ -106,6 +124,20 @@ contract League{
         require(msg.sender == organization, "only organization can end the league");
         ended=true;
         getPoints();
+      	
+      	for(uint i=0; i<numProjects; i++){
+            total_points += points[i];
+        }
+
+        uint averagePoints = total_points / numProjects;
+      
+      	for(uint i=0;i<numProjects; i++) {
+            Knitts _knitts = Knitts(knittsAddress);
+            address _userId = _knitts.getUserContractAddress(projects[i].owner);
+            User _user = User(_userId);
+            _user.addProject(projects[i].description, points[i] , averagePoints, address(this) );
+        } 
+
         return points;
     }
 
@@ -124,16 +156,15 @@ contract League{
             uint point = sum * sum;
             points.push(point);
         }
+      	
+        
         return points;
     }
 
     function distribute() public {
         require(msg.sender == organization, "only organization can distribute prizes");
         uint total_balance = address(this).balance;
-        uint total_points=0;
-        for(uint i=0; i<numProjects; i++){
-            total_points += points[i];
-        }
+        
         for(uint i=0; i<numProjects; i++){
             project storage p  =  projects[i];
             
@@ -182,3 +213,56 @@ contract League{
         return end;
     }
 }
+
+
+contract User {
+		string name;
+  	address id; //metamask address of corresponding user
+  	uint numProjects=0;
+  
+  constructor( address _id, string memory _name ) {
+  	name = _name;
+    id = _id;
+  }
+  
+  
+  struct project{
+        bytes[20][] description;
+        // uint total_fund;
+    		uint point;
+    		uint average_point;
+    		address submittedOn;
+  }
+	// mapping(uint => project) projects;
+
+    project[20] projects;
+  
+  function addProject(bytes[20][] memory description, uint point, uint average_point, address submittedOn) public {
+    project storage p = projects[numProjects++];
+    p.description = description;
+    p.point = point;
+    p.average_point = average_point;
+    p.submittedOn = submittedOn;
+  }
+  
+  function getDetails() public view returns (project[20] memory){
+    	return projects;
+  }
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
