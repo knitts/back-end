@@ -39,7 +39,6 @@ contract Knitts{
     function getDetails() public view returns (address [] memory, address [] memory){
         return (moderators, Leagues);
     }
-    
 
     function removeModerator(address _moderator) public {
         valid[_moderator] = false;
@@ -218,7 +217,7 @@ contract League{
 
 
 contract User {
-		string name;
+    string name;
   	address id; //metamask address of corresponding user
   	uint numProjects=0;
   

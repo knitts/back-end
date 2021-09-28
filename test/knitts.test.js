@@ -1,6 +1,7 @@
 const assert = require("assert");
 const League = artifacts.require("League");
 const Knitts = artifacts.require("Knitts");
+const User = artifacts.require("User");
 const Web3 = require('web3');
 const web3 = new Web3('HTTP://127.0.0.1:7545');
 
@@ -110,6 +111,7 @@ describe('Knitts-League', async()=>{
     var randomAccount;
     var participants;
     var investors;
+    var user;
     before(async function(){
         accounts = await web3.eth.getAccounts();
         organization = moderator = accounts[0];
@@ -148,7 +150,7 @@ describe('Knitts-League', async()=>{
     });
 
     it('should return the points', async()=>{
-        await league.submitIdea.sendTransaction(description, {from: participants[1], value: web3.utils.toWei('0.1', 'ether')});
+        // await league.submitIdea.sendTransaction(description, {from: participants[1], value: web3.utils.toWei('0.1', 'ether')});
         points = await league.endLeague.sendTransaction({from: organization});
         points = await league.endLeague.call({from: organization});
         console.log('points:', points);
@@ -185,8 +187,20 @@ describe('Knitts-League', async()=>{
         console.log('init balance: ', init_balance);
         console.log('final balance: ', final_balance);
     })
-
+    it('Returns the details of the users & their projects', async () => {
+        let userConractAddress = await knitts.getUserContractAddress.call( participants[0] , { from:organization})
+        user = await User.at(userConractAddress);
+        let projectDetails = await user.getDetails.call();
+        console.log(projectDetails);
+    });
+    it('Returns the details of the users & their projects - 2', async () => {
+        let userConractAddress = await knitts.getUserContractAddress.call( participants[1] , { from:organization})
+        user = await User.at(userConractAddress);
+        let projectDetails = await user.getDetails.call();
+        console.log(projectDetails);
+    });
 });
+
 
 
 /*
