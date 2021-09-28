@@ -66,40 +66,40 @@ describe('Knitts', async function(){
 });
 
 
-describe('League', async()=>{
-    var league;
-    var accounts;
-    var description;
-    var organization;
-    var moderator;
-    var randomAccount;
-    var participants;
-    before(async function(){
-        accounts = await web3.eth.getAccounts();
-        organization = moderator = accounts[0];
-        randomAccount = accounts[8];
-        participants = [accounts[1], accounts[2]];
-        league = await League.new(moderator, web3.utils.toWei('0.1', 'ether'), 3, 1000, {from:moderator});
-        sentence = ["OM", "NAMO", "NARAYANA"];
-        description = convert2Bytes(sentence, 20);
-    });
-    it('should have created the league', async()=>{
-        ;
-    });
-    it('should allow participants to join the league', async()=>{
+// describe('League', async()=>{
+//     var league;
+//     var accounts;
+//     var description;
+//     var organization;
+//     var moderator;
+//     var randomAccount;
+//     var participants;
+//     before(async function(){
+//         accounts = await web3.eth.getAccounts();
+//         organization = moderator = accounts[0];
+//         randomAccount = accounts[8];
+//         participants = [accounts[1], accounts[2]];
+//         league = await League.new(moderator, web3.utils.toWei('0.1', 'ether'), 3, 1000,  {from:moderator});
+//         sentence = ["OM", "NAMO", "NARAYANA"];
+//         description = convert2Bytes(sentence, 20);
+//     });
+//     it('should have created the league', async()=>{
+//         ;
+//     });
+//     it('should allow participants to join the league', async()=>{
         
-        await league.submitIdea.sendTransaction(description, {from:participants[0], value: web3.utils.toWei('1', 'ether')});
-        var projectId = await league.submitIdea.call(description, {from: randomAccount, value: web3.utils.toWei('1', 'ether')});
-        // console.log(projectId);
-        assert(projectId>0, 'incorrect projectId');
-    });
-    it('should have updated the project detials', async()=>{
-        await league.submitIdea.sendTransaction(description, {from:participants[0], value: web3.utils.toWei('1', 'ether')});
-        var projectId = await league.submitIdea.call(description, {from: randomAccount, value: web3.utils.toWei('1', 'ether')});
-        var submissionDetails = await league.submissionDetails.call(projectId-2);
-        console.log('read: ', convert2String(submissionDetails[1]));
-    });
-});
+//         await league.submitIdea.sendTransaction(description, {from:participants[0], value: web3.utils.toWei('1', 'ether')});
+//         var projectId = await league.submitIdea.call(description, {from: randomAccount, value: web3.utils.toWei('1', 'ether')});
+//         // console.log(projectId);
+//         assert(projectId>0, 'incorrect projectId');
+//     });
+//     it('should have updated the project detials', async()=>{
+//         await league.submitIdea.sendTransaction(description, {from:participants[0], value: web3.utils.toWei('1', 'ether')});
+//         var projectId = await league.submitIdea.call(description, {from: randomAccount, value: web3.utils.toWei('1', 'ether')});
+//         var submissionDetails = await league.submissionDetails.call(projectId-2);
+//         console.log('read: ', convert2String(submissionDetails[1]));
+//     });
+// });
 
 describe('Knitts-League', async()=>{
     var knitts;
@@ -117,6 +117,9 @@ describe('Knitts-League', async()=>{
         participants = [accounts[1], accounts[2]];
         investors = [accounts[3], accounts[4], accounts[5]];
         knitts = await Knitts.new({from:organization});
+        for(let i=0; i<4 ; i++){
+            await knitts.register.sendTransaction("Arvinth", { from: accounts[i]});
+        }
         sentence = ["OM", "NAMO", "NARAYANA"];
         description = convert2Bytes(sentence, 20);
     });
@@ -124,6 +127,7 @@ describe('Knitts-League', async()=>{
         await knitts.addModerator.sendTransaction({from: moderator, value:web3.utils.toWei('1', 'ether')});
         await knitts.addModerator.call({from: moderator, value:web3.utils.toWei('1', 'ether')});
         await knitts.createLeague.sendTransaction(web3.utils.toWei('0.1', 'ether'), 3, 1000, {from:moderator});
+    
         var leagueAddress = await knitts.createLeague.call(web3.utils.toWei('0.1', 'ether'), 3, 1000, {from:moderator});
         league = await League.at(leagueAddress[0]);
         var league_details = await league.getDetails.call();

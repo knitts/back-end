@@ -46,8 +46,10 @@ contract Knitts{
     }
   
   	function register(string memory _name) public returns (address) {
-    	User newUser = new User(msg.sender, _name);
-      return address(newUser);
+        User newUser = new User(msg.sender, _name);
+        userExists[msg.sender] = true;
+        idToUser[msg.sender] = address(newUser);
+        return address(newUser);
     }
   
   	function getUserContractAddress(address _id) public view returns(address) {
