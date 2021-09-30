@@ -177,7 +177,10 @@ contract League{
 
             for(uint j=0; j<p.investors.length; j++){
                 address investor = p.investors[j];
-                payable(investor).transfer( (6 * points[i] * total_balance * p.investments[investor]) / (10 * total_points * p.total_fund) );
+                Knitts _knitts = Knitts(knittsAddress);
+                address _userId = _knitts.getUserContractAddress(p.investors[j]);
+                User _user = User(_userId);
+                _user.split{value:(6 * points[i] * total_balance * p.investments[investor]) / (10 * total_points * p.total_fund)}();
             }
         }
 
@@ -242,7 +245,17 @@ contract User {
         return NFTs_created;
     }
 
-    function scratchNFTs() public returns(uint){
+    function split() external payable {
+        uint value = (msg.value * 95) / 100;
+        scratchNFTs();
+        for(uint i=0; i<NFTs_created.length; i++){
+            NFT nft = NFT(NFTs_created[i]);
+            payable(nft.ownerOf(1)).transfer((value * (NFTs_created.length))/10);
+        }
+        payable(id).transfer(address(this).balance);
+    }
+
+    function scratchNFTs() internal returns(uint){
         uint rem = 0;
         for(uint i=0; i<NFTs_created.length; i++){
             NFT new_nft =  NFT(NFTs_created[i]);
