@@ -6,8 +6,7 @@ const web3 = new Web3('HTTP://127.0.0.1:7545');
 describe('NFT', ()=>{
     before(async ()=>{
         accounts = await web3.eth.getAccounts();
-        nft = await NFT.new('GOLD', 'G', {from:accounts[0]});
-        await nft.awardItem.sendTransaction(accounts[0], 'google.com');
+        nft = await NFT.new('GOLD', 'G', accounts[0], 'google.com', 10, {from:accounts[0]});
     });
     it('should have minted the nfts', async()=>{
         var balance = await nft.balanceOf(accounts[0]);
@@ -25,6 +24,4 @@ describe('NFT', ()=>{
         var owner = await nft.ownerOf.call(1);
         assert(owner == accounts[1], "Owner address is not updated");
     });
-
-    
 });

@@ -21,10 +21,18 @@
  const HDWalletProvider = require('@truffle/hdwallet-provider');
  //const mnemonic = require('./secrets.json');
  // const infuraKey = "fj4jll3k.....";
- 
+
  const mnemonic = "vehicle wedding cool solution illness leave frequent aunt into index potato exotic"
- 
+
  module.exports = {
+  plugins: ["truffle-contract-size"],
+  settings: {          // See the solidity docs for advice about optimization and evmVersion
+    optimizer: {
+      enabled: true,
+      runs: 1
+    },
+    evmVersion: "byzantium"
+   },
    /**
     * Networks define how you connect to your ethereum client and let you set the
     * defaults web3 uses to send transactions. If you don't specify one truffle
@@ -35,6 +43,7 @@
     * $ truffle test --network <network-name>
     */
  
+    
    networks: {
      // Useful for testing. The `development` name is special - truffle uses it by default
      // if it's defined here and no other network is specified at the command line.
@@ -46,7 +55,8 @@
       host: "127.0.0.1",     // Localhost (default: none)
       port: 7545,            // Standard Ethereum port (default: none)
       network_id: "*",       // Any network (default: none)
-      gas: 1e7,
+      gas: 5e8,
+      
      },
     //  matic: {
     //    provider: () => new HDWalletProvider(mnemonic, `https://rpc-mumbai.matic.today`),

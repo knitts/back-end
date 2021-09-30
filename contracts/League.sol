@@ -1,26 +1,39 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
 
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol"; 
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+
+
+library MyMathlib{
+    function sqrt(uint num) internal pure returns(uint){
+        uint start = 1;
+        uint end = num;
+        uint mid = start;
+        while(start < end){
+            mid = start + (end - start)/2;
+            if(mid * mid >= num){
+                end = mid;
+            }else{
+                start = mid+1;
+            }
+        }
+        return end;
+    }
+}
+
 
 contract Knitts{
     //organization address here
     address organization = 0x79e6234Ff4E7DB556F916FeBcE9e52a68D0B8879;
-    address[] moderators;//change this to mapping mapping(address=>bool)
-    mapping(address=>bool) valid;
     mapping(address => uint) deposits;
-    address[] Leagues;
+    address[] public Leagues;
   	address[] Users;
     uint maxDescLength = 1000;
   	mapping(address => address) idToUser; 
   	mapping(address => bool) userExists;
   	
-    function addModerator() public payable{
-        require(msg.value > 0, "You should deposit some amount");
-        moderators.push(msg.sender);
-        deposits[msg.sender] = msg.value;
-        valid[msg.sender]=true;
-    }
-
     function depositMore() public payable{
         require(msg.value > 0, "You need to deposit some amount");
         deposits[msg.sender] += msg.value;
@@ -37,42 +50,27 @@ contract Knitts{
         return deposits[_moderator];
     }
 
-    function getDetails() public view returns (address [] memory, address [] memory){
-        return (moderators, Leagues);
-    }
-
-    function removeModerator(address _moderator) public {
-        valid[_moderator] = false;
-    }
-  
-  	function register(string memory _name) public returns (address) {
-        User newUser = new User(msg.sender, _name);
-        userExists[msg.sender] = true;
-        idToUser[msg.sender] = address(newUser);
-        return address(newUser);
-    }
   
   	function getUserContractAddress(address _id) public view returns(address) {
-        require(userExists[_id] == true,"The user should exist");
         return idToUser[_id];
     }
 }
 
 contract League{
-    
-    address organization;
-    uint entryFee;
-    uint maxParticipants;
-    uint numProjects;
-    address [] participants;
-    address moderator;
-    uint duration;
-    bool started;
-    bool ended;
-    bool distributed;
-  	uint total_points=0;
-    uint [] points;
-    address knittsAddress;
+    using  MyMathlib for uint;
+    address public organization;
+    uint public entryFee;
+    uint public maxParticipants;
+    uint public numProjects;
+    address [] public participants;
+    address public moderator;
+    uint public duration;
+    bool public started;
+    bool public ended;
+    bool public distributed;
+  	uint public total_points=0;
+    uint [] public points;
+    address public knittsAddress;
 
     struct project{
         string title;
@@ -105,6 +103,7 @@ contract League{
         require(msg.value >= entryFee, "Insufficient entry fee");
         require(numProjects < maxParticipants, "Maximum limit reached");
         project storage p = projects[numProjects++];
+        // p = project({title:title, url:url, image:image, owner: msg.sender, description});
         p.title = title;
         p.url = url;
         p.image = image;
@@ -114,22 +113,23 @@ contract League{
     }
 
     function invest(uint projectId) public payable{
-        require(projectId < numProjects, "Invalid project id");
-        if(projects[projectId].investments[msg.sender] == 0){
-            projects[projectId].investors.push(msg.sender);
+        // require(projectId < numProjects, "Invalid project id");
+        project storage p = projects[projectId];
+        if(p.investments[msg.sender] == 0){
+            p.investors.push(msg.sender);
         }
-        projects[projectId].total_fund += msg.value/1e12;
-        projects[projectId].investments[msg.sender] += msg.value/1e12;
+        p.total_fund += msg.value/1e12;
+        p.investments[msg.sender] += msg.value/1e12;
         
     }
 
     function startLeague() public{
-        require(msg.sender == moderator, "only moderator can start the league");
+        require(msg.sender == moderator, "only moderator");
         started=true;
     }
 
     function endLeague() public returns(uint[] memory){
-        require(msg.sender == organization, "only organization can end the league");
+        require(msg.sender == organization, "only organization");
         ended=true;
         getPoints();
       	
@@ -149,28 +149,25 @@ contract League{
         return points;
     }
 
-    function getPoints() private returns(uint[] memory){
+    function getPoints() internal returns(uint[] memory){
         require(ended = true, "the game has not ended");
         uint [] memory empty_points;
         points = empty_points;
-        // require(msg.sender == organization, "only organization get the points");
-        // write quadratic funding code here
         for(uint i=0; i < numProjects; i++){
             uint sum = 0;
-            for(uint j=0; j<projects[i].investors.length; j++){
-                address investor = projects[i].investors[j];
-                sum += sqrt(projects[i].investments[investor]);
+            project storage p = projects[i];
+            for(uint j=0; j< p.investors.length; j++){
+                address inv = p.investors[j];
+                sum += (p.investments[inv]).sqrt();
             }
-            uint point = sum * sum;
-            points.push(point);
+            points.push(sum * sum);
         }
-      	
         
         return points;
     }
 
     function distribute() public {
-        require(msg.sender == organization, "only organization can distribute prizes");
+        require(msg.sender == organization, "only organization");
         uint total_balance = address(this).balance;
         
         for(uint i=0; i<numProjects; i++){
@@ -188,17 +185,6 @@ contract League{
 
     }
 
-    function getDetails() public view returns(
-        address,//moderator
-        uint,//entry fee
-        uint,//maxParticipants
-        bool, //started
-        bool, //ended
-        bool //distributed
-    ){
-        return (moderator, entryFee, maxParticipants, started, ended, distributed);
-    }
-
     function submissionDetails(uint projectId) public view returns(
         address, // project owner
         bytes[20][] memory // description
@@ -206,20 +192,7 @@ contract League{
         return (projects[projectId].owner, projects[projectId].description);
     }
 
-    function sqrt(uint num) public pure returns(uint){
-        uint start = 1;
-        uint end = num;
-        uint mid = start;
-        while(start < end){
-            mid = start + (end - start)/2;
-            if(mid * mid >= num){
-                end = mid;
-            }else{
-                start = mid+1;
-            }
-        }
-        return end;
-    }
+    
 }
 
 
@@ -227,56 +200,91 @@ contract User {
     string name;
   	address id; //metamask address of corresponding user
   	uint numProjects=0;
-  
-  constructor( address _id, string memory _name ) {
-  	name = _name;
-    id = _id;
-  }
-  
-  
-  struct project{
-      string title;
-      string url;
-      string image;
-        bytes[20][] description;
-        // uint total_fund;
-        uint point;
-        uint average_point;
-        address submittedOn;
-  }
-	// mapping(uint => project) projects;
+    address[] public NFTs_created;
+    bool public pending_nfts = false;
+    constructor( address _id, string memory _name ) {
+        name = _name;
+        id = _id;
+    }
 
-    project[20] projects;
-  
-  function addProject(string memory title, string memory url, string memory image, bytes[20][] memory description, uint point, uint average_point, address submittedOn) public {
-    project storage p = projects[numProjects++];
-    p.title = title;
-    p.url = url;
-    p.image = image;
-    p.description = description;
-    p.point = point;
-    p.average_point = average_point;
-    p.submittedOn = submittedOn;
-  }
-  
-  function getDetails() public view returns (project[20] memory){
-    	return projects;
-  }
+    struct project{
+        string title;
+        string url;
+        string image;
+            bytes[20][] description;
+            // uint total_fund;
+            uint point;
+            uint average_point;
+            address submittedOn;
+    }
+        // mapping(uint => project) projects;
+
+        project[20] public projects;
+    
+    function addProject(string memory title, string memory url, string memory image, bytes[20][] memory description, uint point, uint average_point, address submittedOn) public {
+        project storage p = projects[numProjects++];
+        p.title = title;
+        p.url = url;
+        p.image = image;
+        p.description = description;
+        p.point = point;
+        p.average_point = average_point;
+        p.submittedOn = submittedOn;
+    }
+    
+
+    function createNFT(uint _bronze) public returns(address [] memory){
+        require(_bronze <= 10, "You can create only 10 bronzes");
+        require(pending_nfts == false, "There are pending nfts still");
+        require(msg.sender == id, "wrong user account");
+        for(uint i=0; i<_bronze; i++){
+            NFT new_nft = new NFT("Bronze", "B", id, 'https://s3.envato.com/files/235568921/preview.jpg', 1);
+            NFTs_created.push(address(new_nft));
+        }
+        return NFTs_created;
+    }
+
+    function scratchNFTs() public returns(uint){
+        uint rem = 0;
+        for(uint i=0; i<NFTs_created.length; i++){
+            NFT new_nft =  NFT(NFTs_created[i]);
+            rem = new_nft.scratchCard();
+        }
+        if(rem == 0){
+            pending_nfts = false;
+            address [] memory temp;
+            NFTs_created = temp;
+        }
+        return rem;
+    }
   
 }
 
+contract NFT is ERC721URIStorage, Ownable{
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIds;
+    address nft_creator;
+    address nft_owner;
+    uint leaguesMore;
+    constructor(string memory _name, string memory _symbol, address _player, string memory _tokenURI, uint _leaguesMore) ERC721(_name, _symbol){
+        nft_creator = msg.sender;
+        nft_owner = msg.sender;
+        leaguesMore = _leaguesMore;
+        _tokenIds.increment();
+        uint256 newItemId = _tokenIds.current();
+        _mint(_player, newItemId);
+        _setTokenURI(newItemId, _tokenURI);
+    }
 
+    function scratchCard() public returns (uint){
+        require(leaguesMore > 0, "expired");
+        leaguesMore -= 1;
+        if(leaguesMore == 0){
+            _burn(1);
+        }
+        return leaguesMore;
+    }
+    
 
-
-
-
-
-
-
-
-
-
-
-
-
+}
 
