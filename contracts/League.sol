@@ -243,20 +243,21 @@ contract User {
         require(pending_nfts == false, "There are pending nfts still");
         require(msg.sender == id, "wrong user account");
         for(uint i=0; i<_bronze; i++){
-            NFT new_nft = new NFT(msg.sender, "Bronze", "B", id, 'https://s3.envato.com/files/235568921/preview.jpg', 1);
+            NFT new_nft = new NFT(id, "Bronze", "B", id, 'https://s3.envato.com/files/235568921/preview.jpg', 1);
             NFTs_created.push(address(new_nft));
         }
+        pending_nfts = true;
         return NFTs_created;
     }
 
     function split() public payable {
         uint value = (msg.value * 95) / 100;
         if(pending_nfts){
-            scratchNFTs();
             for(uint i=0; i<NFTs_created.length; i++){
                 NFT nft = NFT(NFTs_created[i]);
-                payable(nft.ownerOf(1)).transfer((value * (NFTs_created.length))/10);
+                payable(nft.ownerOf(1)).transfer((value)/10);
             }
+            scratchNFTs();
         }
         
         payable(id).transfer(address(this).balance);
