@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 
 
 library MyMathlib{
-    function sqrt(uint num) internal pure returns(uint){
+    function sqrt(uint num) public pure returns(uint){
         uint start = 1;
         uint end = num;
         uint mid = start;
@@ -22,7 +22,7 @@ library MyMathlib{
         return end;
     }
 
-    function sum(uint[] memory arr) internal pure returns (uint){
+    function sum(uint[] memory arr) public pure returns (uint){
         uint buf = 0;
         for(uint i=0; i<arr.length; i++){
             buf += arr[i];
