@@ -12,7 +12,6 @@ contract Knitts{
     uint maxDescLength = 1000;
   	mapping(address => address) idToUser; 
   	mapping(address => bool) userExists;
-  	
     function addModerator() public payable{
         require(msg.value > 0, "You should deposit some amount");
         moderators.push(msg.sender);
@@ -45,7 +44,7 @@ contract Knitts{
     }
   
   	function register(string memory _name) public returns (address) {
-        User newUser = new User(msg.sender, _name);
+        User newUser = new User(msg.sender, _name, organization);
         userExists[msg.sender] = true;
         idToUser[msg.sender] = address(newUser);
         return address(newUser);
@@ -177,7 +176,24 @@ contract League{
 
             for(uint j=0; j<p.investors.length; j++){
                 address investor = p.investors[j];
-                payable(investor).transfer( (6 * points[i] * total_balance * p.investments[investor]) / (10 * total_points * p.total_fund) );
+                 Knitts _knitts = Knitts(knittsAddress);
+                address _userId = _knitts.getUserContractAddress(investor);
+                User _user = User(_userId);
+                address [] memory NFTs = _user.getNFTs();
+                
+                if(NFTs.length == 0){
+                    uint value = (6 * points[i] * total_balance * p.investments[investor]) / (10 * total_points * p.total_fund);
+                    payable(investor).transfer( value );
+                }
+                else{
+                    for(uint k = 0; k < NFTs.length; k++){
+                        NFT nft = NFT(NFTs[k]);
+                        uint value = (6 * points[i] * total_balance * p.investments[investor] * nft.percentage()) / (10 * total_points * p.total_fund * 100);
+                        payable(nft.owner()).transfer(value);
+                        nft.strikeNFT();
+                    }
+                }
+                
             }
         }
 
@@ -221,13 +237,19 @@ contract League{
 
 
 contract User {
-    string name;
-  	address id; //metamask address of corresponding user
-  	uint numProjects=0;
-  
-  constructor( address _id, string memory _name ) {
+  string name;
+  address id; //metamask address of corresponding user
+  uint numProjects=0;
+  uint percentageNFTSold;
+  uint NFTsPending = 0;
+  address organization;
+  mapping(address=>bool) validNFT;
+
+  address[] NFTs;
+  constructor( address _id, string memory _name, address _organization ) {
   	name = _name;
     id = _id;
+    organization = _organization;
   }
   
   
@@ -235,7 +257,6 @@ contract User {
       string title;
       string url;
         bytes[20][] description;
-        // uint total_fund;
         uint point;
         uint average_point;
         address submittedOn;
@@ -253,6 +274,42 @@ contract User {
     p.average_point = average_point;
     p.submittedOn = submittedOn;
   }
+
+  function updateNFT(uint value, bool increase, bool deactivate) public {
+      require(validNFT[msg.sender] == true, "Not valid NFT");
+      if(increase){
+          require(percentageNFTSold + value <= 100, "Maximum proportion sold");
+          percentageNFTSold += value;
+      }else{
+          require(percentageNFTSold >= value, "Not enough proportion");
+          percentageNFTSold -= value;
+      }
+      if(deactivate){
+          validNFT[msg.sender] = false;
+          NFTsPending-=1;
+          if(NFTsPending ==0){
+            address [] memory NFTsUtil;
+            NFTs = NFTsUtil;
+          }
+          
+      }
+  }
+
+  function mintNFT(uint shares, uint numLeagues) public returns (address[] memory){
+      uint percentageEachShare = 100/shares;
+      require(shares * percentageEachShare != 100, "shares can only be a factor of 100");
+      require(NFTsPending > 0, "You have unsold minted NFTs left");
+      require(msg.sender == id);
+      for(uint i=0; i<shares; i++){
+          NFT newNFT = new NFT(organization, address(this), address(this), id, id, percentageEachShare, numLeagues);
+          NFTs.push(address(newNFT));
+      }
+      return NFTs;
+  }
+
+  function getNFTs() public view returns (address[] memory){
+      return NFTs;
+  }
   
   function getDetails() public view returns (project[20] memory){
     	return projects;
@@ -261,6 +318,48 @@ contract User {
 }
 
 
+contract NFT{
+    address public organization;
+    address public creater;
+    address public owner;
+    uint public percentage;
+    uint public gamesRemaining;
+    bool public expired;
+    address public createrContractId;
+    address public ownerContractId;
+
+    constructor(address _organization, address _createrContractId, address _ownerContractId, address _creater, address _owner, uint _percentage, uint _gamesRemaining){
+        organization = _organization;
+        creater = _creater;
+        owner = _owner;
+        percentage = _percentage;
+        gamesRemaining = _gamesRemaining;
+        expired = false;
+        createrContractId = _createrContractId;
+        ownerContractId = _ownerContractId;
+    }
+
+    function getDetails() public view returns(address, address, uint, uint, bool){
+        return (creater, owner, percentage, gamesRemaining, expired);
+    }
+
+    function strikeNFT() public returns (uint){
+        // require(msg.sender == organization, "only organization can strikeNFT");
+        require(expired == false, "The card has expired");
+        require(gamesRemaining > 0, "The maximum number of games has been reached");
+        gamesRemaining = gamesRemaining-1;
+        if(gamesRemaining == 0){
+            expired = true;
+            User(createrContractId).updateNFT(percentage, true, true);
+        }else{
+            User(createrContractId).updateNFT(percentage, true, false);
+        }
+        return percentage;
+    }
+
+    
+
+}
 
 
 
