@@ -61,6 +61,10 @@ contract Knitts{
   	function getUserContractAddress(address _id) public view returns(address) {
         return idToUser[_id];
     }
+
+    function register(address id, address userContract) public {
+        idToUser[id] = userContract;
+    }
 }
 
 contract League{
@@ -239,19 +243,22 @@ contract User {
         require(pending_nfts == false, "There are pending nfts still");
         require(msg.sender == id, "wrong user account");
         for(uint i=0; i<_bronze; i++){
-            NFT new_nft = new NFT("Bronze", "B", id, 'https://s3.envato.com/files/235568921/preview.jpg', 1);
+            NFT new_nft = new NFT(msg.sender, "Bronze", "B", id, 'https://s3.envato.com/files/235568921/preview.jpg', 1);
             NFTs_created.push(address(new_nft));
         }
         return NFTs_created;
     }
 
-    function split() external payable {
+    function split() public payable {
         uint value = (msg.value * 95) / 100;
-        scratchNFTs();
-        for(uint i=0; i<NFTs_created.length; i++){
-            NFT nft = NFT(NFTs_created[i]);
-            payable(nft.ownerOf(1)).transfer((value * (NFTs_created.length))/10);
+        if(pending_nfts){
+            scratchNFTs();
+            for(uint i=0; i<NFTs_created.length; i++){
+                NFT nft = NFT(NFTs_created[i]);
+                payable(nft.ownerOf(1)).transfer((value * (NFTs_created.length))/10);
+            }
         }
+        
         payable(id).transfer(address(this).balance);
     }
 
@@ -277,9 +284,9 @@ contract NFT is ERC721URIStorage, Ownable{
     address nft_creator;
     address nft_owner;
     uint leaguesMore;
-    constructor(string memory _name, string memory _symbol, address _player, string memory _tokenURI, uint _leaguesMore) ERC721(_name, _symbol){
-        nft_creator = msg.sender;
-        nft_owner = msg.sender;
+    constructor(address _creator, string memory _name, string memory _symbol, address _player, string memory _tokenURI, uint _leaguesMore) ERC721(_name, _symbol){
+        nft_creator = _creator;
+        nft_owner = _creator;
         leaguesMore = _leaguesMore;
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();

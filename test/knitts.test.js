@@ -119,8 +119,15 @@ describe('Knitts-League', async()=>{
         participants = [accounts[1], accounts[2]];
         investors = [accounts[3], accounts[4], accounts[5]];
         knitts = await Knitts.new({from:organization});
+        
         sentence = ["OM", "NAMO", "NARAYANA"];
         description = convert2Bytes(sentence, 20);
+    });
+    it('should allow users to register', async()=>{
+        for(let i=0; i<6 ; i++){
+            _user = await User.new(accounts[i], "Arvinth", {from: accounts[i]});
+            await knitts.register.sendTransaction(accounts[i], _user.address, { from: organization});
+        }
     });
     it('should allow moderator to create a league', async()=>{
         await knitts.depositMore.sendTransaction({from: moderator, value:web3.utils.toWei('1', 'ether')});
@@ -136,7 +143,6 @@ describe('Knitts-League', async()=>{
         await league.submitIdea.sendTransaction('Knitt project', 'https://www.google.com/', 'https://www.google.com/', description, {from: participants[1], value: web3.utils.toWei('0.1', 'ether')});
         var numParticipants = await league.submitIdea.call('Knitt project', 'https://www.google.com/','https://www.google.com/',  description, {from: participants[0], value: web3.utils.toWei('0.1', 'ether')});
         assert(numParticipants > 0, 'participants not updated properly');
-        console.log('# of participants:', numParticipants);
     });
 
     it('allows investor to invest', async()=>{
@@ -186,14 +192,10 @@ describe('Knitts-League', async()=>{
     it('Returns the details of the users & their projects', async () => {
         let userConractAddress = await knitts.getUserContractAddress.call( participants[0] , { from:organization})
         user = await User.at(userConractAddress);
-        let projectDetails = await user.getDetails.call();
-        console.log(projectDetails);
     });
     it('Returns the details of the users & their projects - 2', async () => {
         let userConractAddress = await knitts.getUserContractAddress.call( participants[1] , { from:organization})
         user = await User.at(userConractAddress);
-        let projectDetails = await user.getDetails.call();
-        console.log(projectDetails);
     });
 });
 
@@ -201,7 +203,7 @@ describe('Knitts-League', async()=>{
 describe('NFT', ()=>{
     before(async ()=>{
         accounts = await web3.eth.getAccounts();
-        nft = await NFT.new('GOLD', 'G', accounts[0], 'google.com', 10, {from:accounts[0]});
+        nft = await NFT.new(accounts[0], 'GOLD', 'G', accounts[0], 'google.com', 10, {from:accounts[0]});
     });
     it('should have minted the nfts', async()=>{
         var balance = await nft.balanceOf(accounts[0]);
@@ -220,8 +222,3 @@ describe('NFT', ()=>{
         assert(owner == accounts[1], "Owner address is not updated");
     });
 });
-/*
-rough pad:
-words: [ 36392601, 11462121, 1294, <1 empty item> ] with sqrt function
-words: [ 0, 36037632, 66860250, 17393732, 443734, <1 empty item> ] without sqrt function
-*/
