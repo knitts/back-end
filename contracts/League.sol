@@ -2,7 +2,6 @@
 pragma solidity >=0.8.0;
 
 contract Knitts{
-    //organization address here
     address organization = 0x79e6234Ff4E7DB556F916FeBcE9e52a68D0B8879;
     address[] moderators;//change this to mapping mapping(address=>bool)
     mapping(address=>bool) valid;
@@ -75,6 +74,7 @@ contract League{
     struct project{
         string title;
         string url;
+        string image;
         address owner;
         bytes[20][] description;
         mapping(address => uint)investments;
@@ -98,12 +98,13 @@ contract League{
         knittsAddress = _knittsAddress;
     }
 
-    function submitIdea(string memory title, string memory url, bytes[20][] memory description) public payable returns(uint){
+    function submitIdea(string memory title, string memory url, string memory image, bytes[20][] memory description) public payable returns(uint){
         require(msg.value >= entryFee, "Insufficient entry fee");
         require(numProjects < maxParticipants, "Maximum limit reached");
         project storage p = projects[numProjects++];
         p.title = title;
         p.url = url;
+        p.image = image;
         p.owner = msg.sender;
         p.description = description;
         return numProjects;
@@ -139,7 +140,7 @@ contract League{
             Knitts _knitts = Knitts(knittsAddress);
             address _userId = _knitts.getUserContractAddress(projects[i].owner);
             User _user = User(_userId);
-            _user.addProject(projects[i].title, projects[i].url, projects[i].description, points[i] , averagePoints, address(this) );
+            _user.addProject(projects[i].title, projects[i].url, projects[i].image, projects[i].description, points[i] , averagePoints, address(this) );
         } 
 
         return points;
@@ -256,6 +257,7 @@ contract User {
   struct project{
       string title;
       string url;
+      string image;
         bytes[20][] description;
         uint point;
         uint average_point;
@@ -265,10 +267,11 @@ contract User {
 
     project[20] projects;
   
-  function addProject(string memory title, string memory url, bytes[20][] memory description, uint point, uint average_point, address submittedOn) public {
+  function addProject(string memory title, string memory url, string memory image, bytes[20][] memory description, uint point, uint average_point, address submittedOn) public {
     project storage p = projects[numProjects++];
     p.title = title;
     p.url = url;
+    p.image = image;
     p.description = description;
     p.point = point;
     p.average_point = average_point;
@@ -356,8 +359,6 @@ contract NFT{
         }
         return percentage;
     }
-
-    
 
 }
 

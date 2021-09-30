@@ -46,7 +46,7 @@
       host: "127.0.0.1",     // Localhost (default: none)
       port: 7545,            // Standard Ethereum port (default: none)
       network_id: "*",       // Any network (default: none)
-      gas: 1e7,
+      gas: 5e8,
      },
     //  matic: {
     //    provider: () => new HDWalletProvider(mnemonic, `https://rpc-mumbai.matic.today`),
