@@ -107,9 +107,9 @@ describe('Knitts-League', async()=>{
         assert(league_details[0] == moderator, "moderator address is different");
     });
     it('should allow participants to enter', async()=>{
-        await league.methods.submitIdea('Knitt project', 'https://www.google.com/', description).send({from: participants[0], value: web3.utils.toWei('0.1', 'ether'), gas: gasfee});
-        await league.methods.submitIdea('Knitt project', 'https://www.google.com/', description).send({from: participants[1], value: web3.utils.toWei('0.1', 'ether'), gas: gasfee});
-        var numParticipants = await league.methods.submitIdea('Knitt project', 'https://www.google.com/', description).call({from: participants[0], value: web3.utils.toWei('0.1', 'ether'), gas: gasfee});
+        await league.methods.submitIdea('Knitt project', 'https://www.google.com/', 'https://www.google.com/', description).send({from: participants[0], value: web3.utils.toWei('0.1', 'ether'), gas: gasfee});
+        await league.methods.submitIdea('Knitt project', 'https://www.google.com/', 'https://www.google.com/', description).send({from: participants[1], value: web3.utils.toWei('0.1', 'ether'), gas: gasfee});
+        var numParticipants = await league.methods.submitIdea('Knitt project', 'https://www.google.com/', 'https://www.google.com/', description).call({from: participants[0], value: web3.utils.toWei('0.1', 'ether'), gas: gasfee});
         assert(numParticipants > 0, 'participants not updated properly');
         // console.log('# of participants:', numParticipants);
     }).timeout(20000);
@@ -177,9 +177,7 @@ describe('Knitts-League', async()=>{
 rough pad:
 words: [ 36392601, 11462121, 1294, <1 empty item> ] with sqrt function
 words: [ 0, 36037632, 66860250, 17393732, 443734, <1 empty item> ] without sqrt function
-
 knitts; 0xAe6c8ADf2fec27b2314Db4dA7C765AaF12b2D357
 ;eague: 0x2BedfB619A7534d755694bD08F744150f9a641a3
 user: 0x4148806f2eEc63Ce0898Adcb4BD5227D9b942003
-
 */
