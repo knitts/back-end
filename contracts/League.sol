@@ -21,18 +21,25 @@ library MyMathlib{
         }
         return end;
     }
+
+    function sum(uint[] memory arr) internal pure returns (uint){
+        uint buf = 0;
+        for(uint i=0; i<arr.length; i++){
+            buf += arr[i];
+        }
+        return buf;
+    }
 }
 
 
 contract Knitts{
+    // using  MyMathlib for *;
     //organization address here
     address organization = 0x79e6234Ff4E7DB556F916FeBcE9e52a68D0B8879;
     mapping(address => uint) deposits;
     address[] public Leagues;
   	address[] Users;
-    uint maxDescLength = 1000;
   	mapping(address => address) idToUser; 
-  	mapping(address => bool) userExists;
   	
     function depositMore() public payable{
         require(msg.value > 0, "You need to deposit some amount");
@@ -57,7 +64,7 @@ contract Knitts{
 }
 
 contract League{
-    using  MyMathlib for uint;
+    using  MyMathlib for *;
     address public organization;
     uint public entryFee;
     uint public maxParticipants;
@@ -94,16 +101,14 @@ contract League{
         started=false;
         ended=false;
         distributed=false;
-        //organization = 0x79e6234Ff4E7DB556F916FeBcE9e52a68D0B8879; //for public net
         organization = _moderator; // for local testing
         knittsAddress = _knittsAddress;
     }
 
-    function submitIdea(string memory title, string memory url, string memory image, bytes[20][] memory description) public payable returns(uint){
+    function submitIdea(string memory title, string memory url, string memory image, bytes[20][] memory description) external payable returns(uint){
         require(msg.value >= entryFee, "Insufficient entry fee");
         require(numProjects < maxParticipants, "Maximum limit reached");
         project storage p = projects[numProjects++];
-        // p = project({title:title, url:url, image:image, owner: msg.sender, description});
         p.title = title;
         p.url = url;
         p.image = image;
@@ -112,8 +117,7 @@ contract League{
         return numProjects;
     }
 
-    function invest(uint projectId) public payable{
-        // require(projectId < numProjects, "Invalid project id");
+    function invest(uint projectId) external payable{
         project storage p = projects[projectId];
         if(p.investments[msg.sender] == 0){
             p.investors.push(msg.sender);
@@ -123,20 +127,16 @@ contract League{
         
     }
 
-    function startLeague() public{
-        require(msg.sender == moderator, "only moderator");
+    function startLeague() external {
+        require(msg.sender == organization, "only moderator");
         started=true;
     }
 
-    function endLeague() public returns(uint[] memory){
+    function endLeague() external returns(uint[] memory){
         require(msg.sender == organization, "only organization");
         ended=true;
         getPoints();
-      	
-      	for(uint i=0; i<numProjects; i++){
-            total_points += points[i];
-        }
-
+      	total_points = points.sum();
         uint averagePoints = total_points / numProjects;
       
       	for(uint i=0;i<numProjects; i++) {
@@ -154,19 +154,19 @@ contract League{
         uint [] memory empty_points;
         points = empty_points;
         for(uint i=0; i < numProjects; i++){
-            uint sum = 0;
+            uint buf = 0;
             project storage p = projects[i];
             for(uint j=0; j< p.investors.length; j++){
                 address inv = p.investors[j];
-                sum += (p.investments[inv]).sqrt();
+                buf += (p.investments[inv]).sqrt();
             }
-            points.push(sum * sum);
+            points.push(buf * buf);
         }
         
         return points;
     }
 
-    function distribute() public {
+    function distribute() external {
         require(msg.sender == organization, "only organization");
         uint total_balance = address(this).balance;
         
@@ -185,7 +185,7 @@ contract League{
 
     }
 
-    function submissionDetails(uint projectId) public view returns(
+    function submissionDetails(uint projectId) external view returns(
         address, // project owner
         bytes[20][] memory // description
     )  {
@@ -212,12 +212,10 @@ contract User {
         string url;
         string image;
             bytes[20][] description;
-            // uint total_fund;
             uint point;
             uint average_point;
             address submittedOn;
     }
-        // mapping(uint => project) projects;
 
         project[20] public projects;
     
