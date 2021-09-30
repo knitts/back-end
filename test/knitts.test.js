@@ -168,7 +168,7 @@ describe('Knitts-League', async()=>{
 describe('NFT', ()=>{
     before(async ()=>{
         accounts = await web3.eth.getAccounts();
-        nft = await NFT.new(accounts[0], 'GOLD', 'G', accounts[0], 'google.com', 10, {from:accounts[0]});
+        nft = await NFT.new(accounts[0], 'GOLD', 'G', accounts[0], 'google.com', 10, 1, {from:accounts[0]});
     });
     it('should have minted the nfts', async()=>{
         var balance = await nft.balanceOf(accounts[0]);
@@ -224,15 +224,17 @@ describe('Knitts-League-NFT', async()=>{
     it('allows investor to create NFT', async()=>{
         let userConractAddress = await knitts.getUserContractAddress.call( investors[0] , { from:organization})
         user = await User.at(userConractAddress);
-        await user.createNFT.sendTransaction(1, {from:investors[0]});
+        await user.createNFT.sendTransaction(1, web3.utils.toWei('1', 'ether'), {from:investors[0]});
         nft = await user.NFTs_created.call(0);
         nft = await NFT.at(nft);
-        assert(await nft.ownerOf.call(1) == investors[0], 'invalid owner');
+        await nft.approve.sendTransaction(nft.address, 1, {from:investors[0]});
+        // assert(await nft.ownerOf.call(1) == investors[0], 'invalid owner');
     });
 
     it('allows investor to sell NFT', async()=>{
-        await nft.approve.sendTransaction(buyer, 1, {from: investors[0]});
-        await nft.transferFrom.sendTransaction(investors[0], buyer, 1, {from: investors[0]});
+        // await nft.approve.sendTransaction(buyer, 1, {from: investors[0]});
+        await nft.buy.sendTransaction({from: buyer, value: web3.utils.toWei('2', 'ether')});
+        await nft.transferFrom.sendTransaction(nft.address, buyer, 1, {from: buyer});
         var owner = await nft.ownerOf.call(1);
         assert(owner == buyer, "Owner address is not updated");
     });

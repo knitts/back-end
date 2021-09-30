@@ -238,12 +238,12 @@ contract User {
     }
     
 
-    function createNFT(uint _bronze) public returns(address [] memory){
+    function createNFT(uint _bronze, uint price) public returns(address [] memory){
         require(_bronze <= 10, "You can create only 10 bronzes");
         require(pending_nfts == false, "There are pending nfts still");
         require(msg.sender == id, "wrong user account");
         for(uint i=0; i<_bronze; i++){
-            NFT new_nft = new NFT(id, "Bronze", "B", id, 'https://s3.envato.com/files/235568921/preview.jpg', 1);
+            NFT new_nft = new NFT(id, "Bronze", "B", id, 'https://s3.envato.com/files/235568921/preview.jpg', 1, price);
             NFTs_created.push(address(new_nft));
         }
         pending_nfts = true;
@@ -283,16 +283,18 @@ contract NFT is ERC721URIStorage, Ownable{
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
     address nft_creator;
-    address nft_owner;
     uint leaguesMore;
-    constructor(address _creator, string memory _name, string memory _symbol, address _player, string memory _tokenURI, uint _leaguesMore) ERC721(_name, _symbol){
+    uint price;
+    uint newItemId;
+    constructor(address _creator, string memory _name, string memory _symbol, address _player, string memory _tokenURI, uint _leaguesMore, uint _price) ERC721(_name, _symbol){
         nft_creator = _creator;
-        nft_owner = _creator;
         leaguesMore = _leaguesMore;
         _tokenIds.increment();
-        uint256 newItemId = _tokenIds.current();
+        newItemId = _tokenIds.current();
         _mint(_player, newItemId);
         _setTokenURI(newItemId, _tokenURI);
+        _approve(address(this), newItemId);
+        price = _price;
     }
 
     function scratchCard() public returns (uint){
@@ -303,7 +305,18 @@ contract NFT is ERC721URIStorage, Ownable{
         }
         return leaguesMore;
     }
-    
+
+    function updatePrice(uint _price) external onlyOwner {
+        price = _price;
+    }
+
+    function buy() external payable {
+        require(msg.value >= price, "costs more");
+        address old_owner = ownerOf(newItemId);
+        _transfer(old_owner, address(this), newItemId);
+        _approve(msg.sender, newItemId);
+        payable(old_owner).transfer(address(this).balance);
+    } 
 
 }
 
