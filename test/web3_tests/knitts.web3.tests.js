@@ -107,9 +107,9 @@ describe('Knitts-League', async()=>{
         assert(league_details[0] == moderator, "moderator address is different");
     });
     it('should allow participants to enter', async()=>{
-        await league.methods.submitIdea(description).send({from: participants[0], value: web3.utils.toWei('0.1', 'ether'), gas: gasfee});
-        await league.methods.submitIdea(description).send({from: participants[1], value: web3.utils.toWei('0.1', 'ether'), gas: gasfee});
-        var numParticipants = await league.methods.submitIdea(description).call({from: participants[0], value: web3.utils.toWei('0.1', 'ether'), gas: gasfee});
+        await league.methods.submitIdea('Knitt project', 'https://www.google.com/', description).send({from: participants[0], value: web3.utils.toWei('0.1', 'ether'), gas: gasfee});
+        await league.methods.submitIdea('Knitt project', 'https://www.google.com/', description).send({from: participants[1], value: web3.utils.toWei('0.1', 'ether'), gas: gasfee});
+        var numParticipants = await league.methods.submitIdea('Knitt project', 'https://www.google.com/', description).call({from: participants[0], value: web3.utils.toWei('0.1', 'ether'), gas: gasfee});
         assert(numParticipants > 0, 'participants not updated properly');
         // console.log('# of participants:', numParticipants);
     }).timeout(20000);

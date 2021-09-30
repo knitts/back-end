@@ -74,6 +74,8 @@ contract League{
     address knittsAddress;
 
     struct project{
+        string title;
+        string url;
         address owner;
         bytes[20][] description;
         mapping(address => uint)investments;
@@ -97,10 +99,12 @@ contract League{
         knittsAddress = _knittsAddress;
     }
 
-    function submitIdea(bytes[20][] memory description) public payable returns(uint){
+    function submitIdea(string memory title, string memory url, bytes[20][] memory description) public payable returns(uint){
         require(msg.value >= entryFee, "Insufficient entry fee");
         require(numProjects < maxParticipants, "Maximum limit reached");
         project storage p = projects[numProjects++];
+        p.title = title;
+        p.url = url;
         p.owner = msg.sender;
         p.description = description;
         return numProjects;
@@ -136,7 +140,7 @@ contract League{
             Knitts _knitts = Knitts(knittsAddress);
             address _userId = _knitts.getUserContractAddress(projects[i].owner);
             User _user = User(_userId);
-            _user.addProject(projects[i].description, points[i] , averagePoints, address(this) );
+            _user.addProject(projects[i].title, projects[i].url, projects[i].description, points[i] , averagePoints, address(this) );
         } 
 
         return points;
@@ -228,18 +232,22 @@ contract User {
   
   
   struct project{
+      string title;
+      string url;
         bytes[20][] description;
         // uint total_fund;
-    		uint point;
-    		uint average_point;
-    		address submittedOn;
+        uint point;
+        uint average_point;
+        address submittedOn;
   }
 	// mapping(uint => project) projects;
 
     project[20] projects;
   
-  function addProject(bytes[20][] memory description, uint point, uint average_point, address submittedOn) public {
+  function addProject(string memory title, string memory url, bytes[20][] memory description, uint point, uint average_point, address submittedOn) public {
     project storage p = projects[numProjects++];
+    p.title = title;
+    p.url = url;
     p.description = description;
     p.point = point;
     p.average_point = average_point;
