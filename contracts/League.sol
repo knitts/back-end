@@ -13,19 +13,24 @@ contract Knitts{
   	mapping(address => address) idToUser; 
   	mapping(address => bool) userExists;
   	
-    function addModerator() public payable{
-        require(msg.value > 0, "You should deposit some amount");
-        moderators.push(msg.sender);
-        deposits[msg.sender] = msg.value;
-        valid[msg.sender]=true;
-    }
+    // function addModerator() public payable{
+    //     require(msg.value > 0, "You should deposit some amount");
+    //     moderators.push(msg.sender);
+    //     deposits[msg.sender] = msg.value;
+    //     valid[msg.sender]=true;
+    // }
 
     function depositMore() public payable{
         require(msg.value > 0, "You need to deposit some amount");
         deposits[msg.sender] += msg.value;
     }
 
-    function createLeague(uint _entryFee, uint _numPlayers, uint _duration) public returns(address[] memory){
+    function createLeague(uint _entryFee, uint _numPlayers, uint _duration) public payable returns(address[] memory){
+
+        moderators.push(msg.sender);
+        deposits[msg.sender] += msg.value;
+        valid[msg.sender]=true;
+
         require(_entryFee * _numPlayers <= deposits[msg.sender], "Insufficient deposit");
         League newLeague = new League(msg.sender, _entryFee, _numPlayers, _duration, address(this));
         Leagues.push(address(newLeague));
