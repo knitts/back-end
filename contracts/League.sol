@@ -39,7 +39,6 @@ contract Knitts{
   	mapping(address => address) public idToUser; 
 
     function createLeague(uint _entryFee, uint _numPlayers, uint _duration) public payable returns (address[] memory){
-        require(_entryFee * _numPlayers <= msg.value, "Insufficient deposit");
         League newLeague = new League(msg.sender, msg.value, _entryFee, _numPlayers, _duration, address(this));
         numLeagues += 1;
         Leagues.push(address(newLeague));
