@@ -34,15 +34,13 @@ library MyMathlib{
 
 contract Knitts{
     address public organization = 0x79e6234Ff4E7DB556F916FeBcE9e52a68D0B8879;
-    mapping(address => uint) public deposits;
     address[] public Leagues;
     uint public numLeagues=0;
   	mapping(address => address) public idToUser; 
 
     function createLeague(uint _entryFee, uint _numPlayers, uint _duration) public payable returns (address[] memory){
-        deposits[msg.sender] += msg.value;
-        require(_entryFee * _numPlayers <= deposits[msg.sender], "Insufficient deposit");
-        League newLeague = new League(msg.sender, _entryFee, _numPlayers, _duration, address(this));
+        require(_entryFee * _numPlayers <= msg.value, "Insufficient deposit");
+        League newLeague = new League(msg.sender, msg.value, _entryFee, _numPlayers, _duration, address(this));
         numLeagues += 1;
         Leagues.push(address(newLeague));
         return Leagues;
@@ -56,27 +54,37 @@ contract Knitts{
 
 contract League{
     using  MyMathlib for *;
+
+    //constant variables
     address public organization;
+    address public knittsAddress;
+
+    //parameters
     uint public entryFee;
     uint public maxParticipants;
-    uint public numProjects;
-    address [] public participants;
     address public moderator;
     uint public duration;
-    bool public started;
-    bool public ended;
-    bool public distributed;
-  	uint public total_points=0;
-    uint [] public points;
-    address public knittsAddress;
     uint public deposit;
 
+    //contract variables
+    uint public numProjects=0;
+    address [] public participants;
+    bool public started=false;
+    bool public ended=false;
+    bool public distributed=false;
+    uint [] public points;
+    
+
     struct project{
+
+        //parameters
         string title;
         string url;
         string image;
         address owner;
         bytes[20][] description;
+
+        //variables
         mapping(address => uint)investments;
         address[] investors;
         uint total_fund;
@@ -84,17 +92,14 @@ contract League{
 		
     mapping(uint => project) projects;
 
-    constructor(address _moderator, uint _entryFee, uint _maxParticipants, uint _duration, address _knittsAddress){
+    constructor(address _moderator, uint _deposit, uint _entryFee, uint _maxParticipants, uint _duration, address _knittsAddress){
         entryFee = _entryFee;
         maxParticipants = _maxParticipants;
         moderator = _moderator;
         duration = _duration;
-        numProjects = 0;
-        started=false;
-        ended=false;
-        distributed=false;
         organization = _moderator; // for local testing
         knittsAddress = _knittsAddress;
+        deposit = _deposit;
     }
 
     function submitIdea(string memory title, string memory url, string memory image, bytes[20][] memory description) external payable returns(uint){
@@ -120,26 +125,40 @@ contract League{
     }
 
     function startLeague() external {
-        require(msg.sender == organization, "only moderator");
+        require(msg.sender == organization, "only org");
         started=true;
     }
 
     function endLeague() external returns(uint[] memory){
-        require(msg.sender == knittsAddress, "only knitts");
+        require(msg.sender == organization, "only org");
         ended=true;
+        payable(moderator).transfer(deposit);
         getPoints();
-      	total_points = points.sum();
+      	uint total_points = points.sum();
         uint averagePoints = total_points / numProjects;
       
       	for(uint i=0;i<numProjects; i++) {
             Knitts _knitts = Knitts(knittsAddress);
-            address _userId = _knitts.getUserContractAddress(projects[i].owner);
+            address _userId = _knitts.idToUser(projects[i].owner);
             User _user = User(_userId);
             _user.addProject(projects[i].title, projects[i].url, projects[i].image, projects[i].description, points[i] , averagePoints, address(this) );
         } 
-
+        distribute(total_points);
         return points;
     }
+
+
+    function submissionDetails(uint projectId) external view returns(
+        string memory,
+        string memory,
+        string memory,
+        address, 
+        bytes[20][] memory
+    )  {
+        project storage p  = projects[projectId];
+        return (p.title, p.url, p.image, p.owner, p.description);
+    }
+
 
     function getPoints() internal returns(uint[] memory){
         require(ended = true, "the game has not ended");
@@ -154,11 +173,10 @@ contract League{
             }
             points.push(buf * buf);
         }
-        
         return points;
     }
 
-    function distribute() external {
+    function distribute(uint total_points) internal {
         require(msg.sender == organization, "only organization");
         uint total_balance = address(this).balance;
         
@@ -170,7 +188,7 @@ contract League{
             for(uint j=0; j<p.investors.length; j++){
                 address investor = p.investors[j];
                 Knitts _knitts = Knitts(knittsAddress);
-                address _userId = _knitts.getUserContractAddress(p.investors[j]);
+                address _userId = _knitts.idToUser(p.investors[j]);
                 User _user = User(_userId);
                 _user.split{value:(6 * points[i] * total_balance * p.investments[investor]) / (10 * total_points * p.total_fund)}();
             }
@@ -178,13 +196,6 @@ contract League{
 
         payable(moderator).transfer(address(this).balance);
 
-    }
-
-    function submissionDetails(uint projectId) external view returns(
-        address, // project owner
-        bytes[20][] memory // description
-    )  {
-        return (projects[projectId].owner, projects[projectId].description);
     }
 
     

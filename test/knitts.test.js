@@ -36,69 +36,135 @@ function convert2String(bytes){
     return res;
 }
 
+function balanceOfAccounts(){
+
+}
 
 
 describe('quick tests', async()=>{
-    var knitts, user;
-    var accounts;
-    var organization, moderator;
-    const _entryFee = web3.utils.toWei('0.001', 'ether'), _numPlayers = 3, _duration = 10;
-    const _deposit = web3.utils.toWei('0.01', 'ether');
-    before(async()=>{
+    var knitts, league, user;
+    var title='Knitt project', url='https://www.google.com/', image='https://www.google.com/', description;
+    var _deposit = web3.utils.toWei('0.01', 'ether'), _entryFee=web3.utils.toWei('0.001', 'ether');
+    var _numPlayers=3, _duration=2;
+    var accounts, moderator, participants, investors, randomAccount;
+    before(async function(){
         accounts = await web3.eth.getAccounts();
         organization = moderator = accounts[0];
+        randomAccount = accounts[8];
+        participants = [accounts[1], accounts[2]];
+        investors = [accounts[3], accounts[4], accounts[5]];
         knitts = await Knitts.new({from:organization});
+        
+        sentence = ["OM", "NAMO", "NARAYANA"];
+        description = convert2Bytes(sentence, 20);
     });
-    it('should have created knitts contract', async()=>{
-        ;
+    it('should allow users to register', async()=>{
+        for(let i=0; i<6 ; i++){
+            _user = await User.new(accounts[i], "Arvinth", {from: accounts[i]});
+            await knitts.register.sendTransaction(accounts[i], _user.address, { from: organization});
+        }
     });
-    it('should have created a contest', async()=>{
+    it('should allow moderator to create a league', async()=>{
         await knitts.createLeague.sendTransaction(_entryFee, _numPlayers, _duration, {from:moderator, value:_deposit});
-    });
-    it('returns static variables', async()=>{
         var numLeagues = await knitts.numLeagues.call();
-        assert(numLeagues == 1, "numLeagues not updated properly");
+        var leagueAddress = await knitts.Leagues.call(numLeagues-1);
+        league = await League.at(leagueAddress);
+        assert(await league.moderator() == moderator, "moderator address is different");
     });
-    it('should return elements of mapping', async()=>{
-        var balance = await knitts.deposits.call(moderator);
-        assert(balance == _deposit, 'mismatch in deposit');
+    it('should allow participants to enter', async()=>{
+        await league.submitIdea.sendTransaction(title, url, image, description, {from: participants[0], value: web3.utils.toWei('0.1', 'ether')});
+        await league.submitIdea.sendTransaction(title, url, image, description, {from: participants[1], value: web3.utils.toWei('0.1', 'ether')});
+        var numParticipants = await league.numProjects.call();
+        assert(numParticipants = 2, 'participants not updated properly');
     });
-    it('should register an user', async()=>{
-        user = await User.new(accounts[1], "Arvinth");
-        await knitts.register.sendTransaction(accounts[1], user.address);
-        var userConractAddress = await knitts.idToUser.call(accounts[1]);
-        assert(userConractAddress == user.address, 'user contract address mismatch');
+
+    it('allows investor to invest', async()=>{
+        await league.invest.sendTransaction(0, {from:investors[0], value: web3.utils.toWei('1', 'ether')});
+        await league.invest.sendTransaction(1, {from:investors[1], value: web3.utils.toWei('2', 'ether')});
+        await league.invest.sendTransaction(0, {from: investors[2], value:web3.utils.toWei('1', 'ether')});
+    });
+
+    it('should return the points', async()=>{
+        var init_balance = [
+            await web3.eth.getBalance(accounts[0]),
+            await web3.eth.getBalance(accounts[1]),
+            await web3.eth.getBalance(accounts[2]),
+            await web3.eth.getBalance(accounts[3]),
+            await web3.eth.getBalance(accounts[4]),
+            await web3.eth.getBalance(accounts[5]),
+            await web3.eth.getBalance(accounts[6]),
+            await web3.eth.getBalance(accounts[7]),
+            await web3.eth.getBalance(accounts[8]),
+            await web3.eth.getBalance(accounts[9])];
+        
+        await league.endLeague.sendTransaction({from: organization});
+        points = [];
+        var numParticipants = await league.numProjects.call();
+        for(let i=0; i<numParticipants; i++){
+            points.push(await league.points.call(i));
+        }
+        console.log('points:', points);
+        var final_balance = [
+            await web3.eth.getBalance(accounts[0]),
+            await web3.eth.getBalance(accounts[1]),
+            await web3.eth.getBalance(accounts[2]),
+            await web3.eth.getBalance(accounts[3]),
+            await web3.eth.getBalance(accounts[4]),
+            await web3.eth.getBalance(accounts[5]),
+            await web3.eth.getBalance(accounts[6]),
+            await web3.eth.getBalance(accounts[7]),
+            await web3.eth.getBalance(accounts[8]),
+            await web3.eth.getBalance(accounts[9]), 
+            ];
+        var difference = Array(10);
+        for(let i=0; i<10; i++){
+            difference[i]= final_balance[i] - init_balance[i];
+        }
+        console.log(difference);
+        
+    });
+
+    it('Returns the details of the users & their projects', async () => {
+        let userConractAddress = await knitts.idToUser.call( participants[0] , { from:organization})
+        user = await User.at(userConractAddress);
+    });
+    it('Returns the details of the users & their projects - 2', async () => {
+        let userConractAddress = await knitts.idToUser.call( participants[1] , { from:organization})
+        user = await User.at(userConractAddress);
     });
 });
 
 // describe('Knitts', async function(){
-//     var knitts;
-//     var accounts;
-//     var organization;
-//     var moderator;
-//     var randomAccount;
-//     before(async function(){
-//         accounts = await web3.eth.getAccounts();
-//         organization = moderator = accounts[0];
-//         randomAccount = accounts[8];
-//         knitts = await Knitts.new({from:organization});
-        
-//     });
-//     it('should have created the contract', async()=>{
-//         ;
-//     });
-//     // it("should allow user to enter to become moderator", async()=>{
-//     //     var current_balance = await knitts.getBalance.call(moderator);
-//     //     await knitts.addModerator.sendTransaction({from: moderator, value:web3.utils.toWei('1', 'ether')});
-//     //     var updated_balance = await knitts.getBalance.call(moderator);
-//     //     assert(current_balance < updated_balance, "the balance is not updated");
-//     // });
-//     it("should add more balance to the moderator account", async ()=>{
-//         var current_balance = await knitts.getBalance.call(moderator);
-//         await knitts.depositMore.sendTransaction({from:moderator, value: web3.utils.toWei('1', 'ether')});
-//         var updated_balance = await knitts.getBalance.call(moderator);
-//         assert(current_balance < updated_balance, "the balance is not updated");
-//     });
+    // var knitts, user;
+    // var accounts;
+    // var organization, moderator;
+    // const _entryFee = web3.utils.toWei('0.001', 'ether'), _numPlayers = 3, _duration = 10;
+    // const _deposit = web3.utils.toWei('0.01', 'ether');
+    // before(async()=>{
+    //     accounts = await web3.eth.getAccounts();
+    //     organization = moderator = accounts[0];
+    //     knitts = await Knitts.new({from:organization});
+    // });
+    // it('should have created knitts contract', async()=>{
+    //     ;
+    // });
+    // it('should have created a contest', async()=>{
+    //     await knitts.createLeague.sendTransaction(_entryFee, _numPlayers, _duration, {from:moderator, value:_deposit});
+    // });
+    // it('returns static variables', async()=>{
+    //     var numLeagues = await knitts.numLeagues.call();
+    //     assert(numLeagues == 1, "numLeagues not updated properly");
+    // });
+    // it('should return elements of mapping', async()=>{
+    //     var balance = await knitts.deposits.call(moderator);
+    //     assert(balance == _deposit, 'mismatch in deposit');
+    // });
+    // it('should register an user', async()=>{
+    //     user = await User.new(accounts[1], "Arvinth");
+    //     await knitts.register.sendTransaction(accounts[1], user.address);
+    //     var userConractAddress = await knitts.idToUser.call(accounts[1]);
+    //     assert(userConractAddress == user.address, 'user contract address mismatch');
+    // });
 // });
 
 
