@@ -33,34 +33,21 @@ library MyMathlib{
 
 
 contract Knitts{
-    // using  MyMathlib for *;
-    //organization address here
-    address organization = 0x79e6234Ff4E7DB556F916FeBcE9e52a68D0B8879;
-    mapping(address => uint) deposits;
+    address public organization = 0x79e6234Ff4E7DB556F916FeBcE9e52a68D0B8879;
+    mapping(address => uint) public deposits;
     address[] public Leagues;
-  	address[] Users;
-  	mapping(address => address) idToUser; 
-  	
-    function depositMore() public payable{
-        require(msg.value > 0, "You need to deposit some amount");
-        deposits[msg.sender] += msg.value;
-    }
+    uint public numLeagues=0;
+  	mapping(address => address) public idToUser; 
 
-    function createLeague(uint _entryFee, uint _numPlayers, uint _duration) public returns(address[] memory){
+    function createLeague(uint _entryFee, uint _numPlayers, uint _duration) public payable returns (address[] memory){
+        deposits[msg.sender] += msg.value;
         require(_entryFee * _numPlayers <= deposits[msg.sender], "Insufficient deposit");
         League newLeague = new League(msg.sender, _entryFee, _numPlayers, _duration, address(this));
+        numLeagues += 1;
         Leagues.push(address(newLeague));
         return Leagues;
     }
 
-    function getBalance(address _moderator) public view returns (uint){
-        return deposits[_moderator];
-    }
-
-  
-  	function getUserContractAddress(address _id) public view returns(address) {
-        return idToUser[_id];
-    }
 
     function register(address id, address userContract) public {
         idToUser[id] = userContract;
@@ -82,6 +69,7 @@ contract League{
   	uint public total_points=0;
     uint [] public points;
     address public knittsAddress;
+    uint public deposit;
 
     struct project{
         string title;
@@ -137,7 +125,7 @@ contract League{
     }
 
     function endLeague() external returns(uint[] memory){
-        require(msg.sender == organization, "only organization");
+        require(msg.sender == knittsAddress, "only knitts");
         ended=true;
         getPoints();
       	total_points = points.sum();
