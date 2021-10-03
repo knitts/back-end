@@ -203,11 +203,17 @@ contract League{
 
 
 contract User {
-    string name;
-  	address id; //metamask address of corresponding user
-  	uint numProjects=0;
+
+    //parameters
+    string public name;
+  	address public id; //metamask address of corresponding user
+
+    //contract variables
+  	uint public numProjects=0;
     address[] public NFTs_created;
-    bool public pending_nfts = false;
+    uint public pending_nfts = 0;
+
+
     constructor( address _id, string memory _name ) {
         name = _name;
         id = _id;
@@ -217,41 +223,36 @@ contract User {
         string title;
         string url;
         string image;
-            bytes[20][] description;
-            uint point;
-            uint average_point;
-            address submittedOn;
+        bytes[20][] description;
+        uint point;
+        uint average_point;
+        address submittedOn;
     }
 
-        project[20] public projects;
+    project[20] public projects;
     
-    function addProject(string memory title, string memory url, string memory image, bytes[20][] memory description, uint point, uint average_point, address submittedOn) public {
-        project storage p = projects[numProjects++];
-        p.title = title;
-        p.url = url;
-        p.image = image;
-        p.description = description;
-        p.point = point;
-        p.average_point = average_point;
-        p.submittedOn = submittedOn;
+    function addProject(string memory _title, string memory _url, string memory _image, bytes[20][] memory _description, uint _point, uint _average_point, address _submittedOn) external {
+        projects[numProjects++] = project({title:_title, url:_url, image:_image, description:_description, point:_point, average_point:_average_point, submittedOn:_submittedOn});
     }
     
 
-    function createNFT(uint _bronze, uint price) public returns(address [] memory){
+    function createNFT(uint _bronze, uint price) external returns(address [] memory){
         require(_bronze <= 10, "You can create only 10 bronzes");
-        require(pending_nfts == false, "There are pending nfts still");
+        require(pending_nfts == 0, "There are pending nfts still");
         require(msg.sender == id, "wrong user account");
+
         for(uint i=0; i<_bronze; i++){
             NFT new_nft = new NFT(id, "Bronze", "B", id, 'https://s3.envato.com/files/235568921/preview.jpg', 1, price);
             NFTs_created.push(address(new_nft));
         }
-        pending_nfts = true;
+
+        pending_nfts = _bronze;
         return NFTs_created;
     }
 
-    function split() public payable {
+    function split() external payable {
         uint value = (msg.value * 95) / 100;
-        if(pending_nfts){
+        if(pending_nfts > 0){
             for(uint i=0; i<NFTs_created.length; i++){
                 NFT nft = NFT(NFTs_created[i]);
                 payable(nft.ownerOf(1)).transfer((value)/10);
@@ -269,7 +270,7 @@ contract User {
             rem = new_nft.scratchCard();
         }
         if(rem == 0){
-            pending_nfts = false;
+            pending_nfts = 0;
             address [] memory temp;
             NFTs_created = temp;
         }
@@ -281,10 +282,10 @@ contract User {
 contract NFT is ERC721URIStorage, Ownable{
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
-    address nft_creator;
-    uint leaguesMore;
-    uint price;
-    uint newItemId;
+    address public nft_creator;
+    uint public leaguesMore;
+    uint public price;
+    uint public newItemId;
     constructor(address _creator, string memory _name, string memory _symbol, address _player, string memory _tokenURI, uint _leaguesMore, uint _price) ERC721(_name, _symbol){
         nft_creator = _creator;
         leaguesMore = _leaguesMore;
