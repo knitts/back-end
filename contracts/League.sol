@@ -132,7 +132,8 @@ contract League{
         require(msg.sender == organization, "only org");
         ended=true;
         payable(moderator).transfer(deposit);
-        getPoints();
+        points = getPoints();
+        // getPoints();
       	uint total_points = points.sum();
         uint averagePoints = total_points / numProjects;
       
@@ -142,7 +143,7 @@ contract League{
             User _user = User(_userId);
             _user.addProject(projects[i].title, projects[i].url, projects[i].image, projects[i].description, points[i] , averagePoints, address(this) );
         } 
-        distribute(total_points);
+        // distribute(total_points);
         return points;
     }
 
@@ -152,10 +153,12 @@ contract League{
         string memory,
         string memory,
         address, 
-        bytes[20][] memory
+        bytes[20][] memory,
+        uint,
+        uint
     )  {
         project storage p  = projects[projectId];
-        return (p.title, p.url, p.image, p.owner, p.description);
+        return (p.title, p.url, p.image, p.owner, p.description,p.investors.length,p.total_fund);
     }
 
 
