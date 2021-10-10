@@ -2,6 +2,7 @@ const assert = require("assert");
 const League = require("../../build/contracts/League.json");
 const Knitts = require("../../build/contracts/Knitts.json");
 const User = require("../../build/contracts/User.json");
+const NFT = require("../../build/contracts/NFT.json");
 const web3 = require('./web3');
 
 var gasfee = 5e7;
@@ -213,7 +214,7 @@ describe('NFT', ()=>{
     before(async ()=>{
         accounts = await web3.eth.getAccounts();
         nft = await new web3.eth.Contract(NFT.abi, {from:accounts[0]})
-        nft = await nft.deploy({data:NFT.bytecode, arguments:[accounts[0], 'GOLD', 'G', accounts[0], 'google.com', 10, 1]}).send( {from:accounts[0]});
+        nft = await nft.deploy({data:NFT.bytecode, arguments:[accounts[0], 'GOLD', 'G', accounts[0], 'google.com', 10, 1]}).send( {from:accounts[0], gasLimit: gasfee});
     });
     it('should have minted the nfts', async()=>{
         var balance = await nft.methods.balanceOf(accounts[0]).call();
@@ -237,9 +238,9 @@ describe('NFT', ()=>{
 describe('Knitts-League-NFT', async()=>{
     var knitts, league, user, nft;
     var title='Knitt project', url='https://www.google.com/', image='https://www.google.com/', description;
-    var _deposit = web3.utils.toWei('0.01', 'ether'), _entryFee=web3.utils.toWei('0.001', 'ether');
+    var _deposit = web3.utils.toWei('0.01', 'ether'), _entryFee=web3.utils.toWei('0.001', 'ether'), _price = web3.utils.toWei('1', 'ether');
     var _numPlayers=3, _duration=2;
-    var accounts, moderator, participants, investors, randomAccount;
+    var accounts, moderator, participants, investors, randomAccount, buyer;
     before(async function(){
         accounts = await web3.eth.getAccounts();
         organization = moderator = accounts[0];
@@ -247,6 +248,7 @@ describe('Knitts-League-NFT', async()=>{
         participants = [accounts[1], accounts[2]];
         investors = [accounts[3], accounts[4], accounts[5]];
         // knitts = await Knitts.new({from:organization});
+        buyer = accounts[6];
         knitts = await new web3.eth.Contract(Knitts.abi, {from:organization});
         knitts = await knitts.deploy({data:Knitts.bytecode}).send({from:moderator, gas: gasfee}).then((instance)=>{
             return instance;
@@ -259,7 +261,7 @@ describe('Knitts-League-NFT', async()=>{
         for(let i=0; i<6 ; i++){
             // _user = await User.new(accounts[i], "Arvinth", {from: accounts[i]});
             _user = await new web3.eth.Contract(User.abi, {from:organization});
-            _user = await _user.deploy({data:User.bytecode, arguments:[accounts[1], "Arvinth"]}).send({from:accounts[1], gas: gasfee}).then((instance)=>{
+            _user = await _user.deploy({data:User.bytecode, arguments:[accounts[i], "Arvinth"]}).send({from:accounts[i], gas: gasfee}).then((instance)=>{
                 return instance;
             });
             await knitts.methods.register(accounts[i], _user.options.address).send({ from: organization});
@@ -268,19 +270,21 @@ describe('Knitts-League-NFT', async()=>{
 
     it('allows investor to create NFT', async()=>{
         let userConractAddress = await knitts.methods.idToUser(investors[0]).call(  { from:organization})
-        user = await User.at(userConractAddress);
-        await user.methods.createNFT(1, _price).send({from:investors[0]});
+        user = await new web3.eth.Contract(User.abi, (userConractAddress));
+        // console.log('user', userConractAddress);
+        await user.methods.createNFT(1, _price).send({from:investors[0], gasLimit: gasfee});
         nft = await user.methods.NFTs_created(0).call();
+        // console.log('nft', nft);
         nft = await new web3.eth.Contract(NFT.abi, (nft));
-        await nft.methods.approve(nft.address, 1).send({from:investors[0]});
+        await nft.methods.approve(nft.options.address, 1).send({from:investors[0]});
         // assert(await nft.ownerOf.call(1) == investors[0], 'invalid owner');
     });
 
     it('allows investor to sell NFT', async()=>{
         // await nft.approve.sendTransaction(buyer, 1, {from: investors[0]});
-        await nft.buy.sendTransaction({from: buyer, value: web3.utils.toWei('2', 'ether')});
-        await nft.transferFrom.sendTransaction(nft.address, buyer, 1, {from: buyer});
-        var owner = await nft.ownerOf.call(1);
+        await nft.methods.buy().send({from: buyer, value: web3.utils.toWei('2', 'ether')});
+        await nft.methods.transferFrom(nft.options.address, buyer, 1).send({from: buyer});
+        var owner = await nft.methods.ownerOf(1).call();
         assert(owner == buyer, "Owner address is not updated");
     });
 
@@ -350,7 +354,7 @@ describe('Knitts-League-NFT', async()=>{
         user = await new web3.eth.Contract(User.abi, (userConractAddress));
     });
     it('Returns the details of the users & their projects - 2', async () => {
-        let userConractAddress = await knitts.idToUser.call( participants[1] , { from:organization})
+        let userConractAddress = await knitts.methods.idToUser(participants[1]).call( { from:organization})
         user = await new web3.eth.Contract(User.abi, (userConractAddress));
     });
 });
