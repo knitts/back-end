@@ -6,30 +6,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 
-library MyMathlib{
-    function sqrt(uint num) public pure returns(uint){
-        uint start = 1;
-        uint end = num;
-        uint mid = start;
-        while(start < end){
-            mid = start + (end - start)/2;
-            if(mid * mid >= num){
-                end = mid;
-            }else{
-                start = mid+1;
-            }
-        }
-        return end;
-    }
-
-    function sum(uint[] memory arr) public pure returns (uint){
-        uint buf = 0;
-        for(uint i=0; i<arr.length; i++){
-            buf += arr[i];
-        }
-        return buf;
-    }
-}
+// library MyMathlib{
+    
+// }
 
 
 contract Knitts{
@@ -39,6 +18,7 @@ contract Knitts{
   	mapping(address => address) public idToUser; 
 
     function createLeague(uint _entryFee, uint _numPlayers, uint _duration) public payable returns (address[] memory){
+        require(msg.value > _entryFee * _numPlayers, 'not enough deposit');
         League newLeague = new League(msg.sender, msg.value, _entryFee, _numPlayers, _duration, address(this));
         numLeagues += 1;
         Leagues.push(address(newLeague));
@@ -52,7 +32,7 @@ contract Knitts{
 }
 
 contract League{
-    using  MyMathlib for *;
+    // using  MyMathlib for *;
 
     //constant variables
     address public organization;
@@ -72,6 +52,7 @@ contract League{
     bool public ended=false;
     bool public distributed=false;
     uint [] public points;
+    uint total_points=0;
     
 
     struct project{
@@ -134,7 +115,8 @@ contract League{
         payable(moderator).transfer(deposit);
         points = getPoints();
         // getPoints();
-      	uint total_points = points.sum();
+      	total_points = sum(points);
+      	// uint total_points = points.sum();
         uint averagePoints = total_points / numProjects;
       
       	for(uint i=0;i<numProjects; i++) {
@@ -143,7 +125,7 @@ contract League{
             User _user = User(_userId);
             _user.addProject(projects[i].title, projects[i].url, projects[i].image, projects[i].description, points[i] , averagePoints, address(this) );
         } 
-        // distribute(total_points);
+        distribute(total_points);
         return points;
     }
 
@@ -171,14 +153,14 @@ contract League{
             project storage p = projects[i];
             for(uint j=0; j< p.investors.length; j++){
                 address inv = p.investors[j];
-                buf += (p.investments[inv]).sqrt();
+                buf += sqrt(p.investments[inv]);
             }
             points.push(buf * buf);
         }
         return points;
     }
 
-    function distribute(uint total_points) internal {
+    function distribute(uint total_points) public {
         require(msg.sender == organization, "only organization");
         uint total_balance = address(this).balance;
         
@@ -192,12 +174,36 @@ contract League{
                 Knitts _knitts = Knitts(knittsAddress);
                 address _userId = _knitts.idToUser(p.investors[j]);
                 User _user = User(_userId);
-                _user.split{value:(6 * points[i] * total_balance * p.investments[investor]) / (10 * total_points * p.total_fund)}();
+                _user.split{value:(1 * points[i] * total_balance * p.investments[investor]) / (10 * total_points * p.total_fund)}();
             }
         }
 
         payable(moderator).transfer(address(this).balance);
 
+    }
+
+
+    function sqrt(uint num) public pure returns(uint){
+        uint start = 1;
+        uint end = num;
+        uint mid = start;
+        while(start < end){
+            mid = start + (end - start)/2;
+            if(mid * mid >= num){
+                end = mid;
+            }else{
+                start = mid+1;
+            }
+        }
+        return end;
+    }
+
+    function sum(uint[] memory arr) public pure returns (uint){
+        uint buf = 0;
+        for(uint i=0; i<arr.length; i++){
+            buf += arr[i];
+        }
+        return buf;
     }
 
     
@@ -253,7 +259,7 @@ contract User {
     }
 
     function split() external payable {
-        uint value = (msg.value * 95) / 100;
+        uint value = (msg.value * 1) / 100;
         if(pending_nfts > 0){
             for(uint i=0; i<NFTs_created.length; i++){
                 NFT nft = NFT(NFTs_created[i]);
