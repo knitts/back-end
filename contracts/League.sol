@@ -174,7 +174,7 @@ contract League{
                 Knitts _knitts = Knitts(knittsAddress);
                 address _userId = _knitts.idToUser(p.investors[j]);
                 User _user = User(_userId);
-                _user.split{value:(1 * points[i] * total_balance * p.investments[investor]) / (10 * total_points * p.total_fund)}();
+                _user.split{value:(6 * points[i] * total_balance * p.investments[investor]) / (10 * total_points * p.total_fund)}();
             }
         }
 
@@ -259,7 +259,7 @@ contract User {
     }
 
     function split() external payable {
-        uint value = (msg.value * 1) / 100;
+        uint value = (msg.value * 90) / 100;
         if(pending_nfts > 0){
             for(uint i=0; i<NFTs_created.length; i++){
                 NFT nft = NFT(NFTs_created[i]);
